@@ -13,13 +13,6 @@ Route::get('/', function () {
 Route::get('/dashboard', [DashboardController::class, 'index'])
     ->middleware(['auth'])
     ->name('dashboard');
-Route::post('/dashboard/sync-estados', [DashboardController::class, 'syncEstados'])
-    ->middleware('auth')
-    ->name('dashboard.sync-estados');
-Route::post(
-    '/dashboard/reenviar-pendientes',
-    [DashboardController::class, 'reenviarPendientes']
-)->name('dashboard.reenviar-pendientes');
 
 Route::get('/ticket', [TicketController::class, 'create'])
     ->middleware(['auth'])
@@ -27,8 +20,14 @@ Route::get('/ticket', [TicketController::class, 'create'])
 Route::post('/ticket', [TicketController::class, 'store'])
     ->middleware('auth');
 
-Route::post('/admin/glpi/sync-locations', [GlpiSyncController::class, 'syncLocations'])
-    ->middleware('auth');
+
+Route::middleware(['auth', 'admin'])->group(function () {
+    Route::post('/admin/glpi/sync-locations', [GlpiSyncController::class, 'syncLocations']);
+    Route::post('/dashboard/sync-estados', [DashboardController::class, 'syncEstados'])
+        ->name('dashboard.sync-estados');
+    Route::post('/dashboard/reenviar-pendientes', [DashboardController::class, 'reenviarPendientes'])
+        ->name('dashboard.reenviar-pendientes');
+});
 
 
 
