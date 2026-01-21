@@ -91,8 +91,8 @@
             </div>
 
             {{-- Card principal --}}
-            <div class="bg-white rounded-xl shadow-xl border border-gray-200 p-6 flex flex-col" 
-                 style="height: 380px; min-height: 380px; max-height: 380px;">
+            <div class="bg-white rounded-xl shadow-xl border border-gray-200 p-6 flex flex-col"
+                style="height: 380px; min-height: 380px; max-height: 380px;">
 
                 <div class="flex items-center justify-between mb-4 gap-3">
                     <h2 class="text-lg font-medium">
@@ -188,6 +188,16 @@
                 </form>
                 @endif
 
+                <form action="{{ url('/admin/glpi/sync-locations') }}" method="POST">
+                    @csrf
+
+                    <button
+                        type="submit"
+                        class="w-full rounded-xl border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                        Actualizar ubicaciones GLPI
+                    </button>
+                </form>
+
             </div>
 
         </div>
@@ -202,22 +212,22 @@
             align-items: center;
             justify-content: center;
         }
-        
+
         /* Estilo para scrollbar */
         .flex-1::-webkit-scrollbar {
             width: 6px;
         }
-        
+
         .flex-1::-webkit-scrollbar-track {
             background: #f1f1f1;
             border-radius: 3px;
         }
-        
+
         .flex-1::-webkit-scrollbar-thumb {
             background: #c1c1c1;
             border-radius: 3px;
         }
-        
+
         .flex-1::-webkit-scrollbar-thumb:hover {
             background: #a8a8a8;
         }
