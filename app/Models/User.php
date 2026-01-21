@@ -22,6 +22,8 @@ class User extends Authenticatable
         'email',
         'password',
         'glpi_user_id',
+        'role',
+        'active',
     ];
 
     /**
@@ -50,5 +52,10 @@ class User extends Authenticatable
     public function isAdmin(): bool
     {
         return $this->role === 'admin';
+    }
+
+    public function isActive(): bool
+    {
+        return $this->active;
     }
 }

@@ -199,6 +199,13 @@
                     </button>
                 </form>
 
+                <form action="{{ route('admin.profiles.index') }}" method="GET">
+                    <button
+                        type="submit"
+                        class="w-full rounded-xl border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                        <span class="text-center">Gestionar usuarios</span>
+                    </button>
+                </form>
             </div>
             @endif
 

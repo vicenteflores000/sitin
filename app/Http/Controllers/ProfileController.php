@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -11,31 +12,82 @@ use Illuminate\View\View;
 
 class ProfileController extends Controller
 {
-    /**
-     * Display the user's profile form.
-     */
-    public function edit(Request $request): View
+    public function index()
     {
-        return view('profile.edit', [
-            'user' => $request->user(),
+        return view('admin.profiles.index', [
+            'users' => User::orderBy('name')->get(),
         ]);
     }
 
-    /**
-     * Update the user's profile information.
-     */
-    public function update(ProfileUpdateRequest $request): RedirectResponse
+    public function create()
     {
-        $request->user()->fill($request->validated());
+        return view('admin.profiles.create');
+    }
 
-        if ($request->user()->isDirty('email')) {
-            $request->user()->email_verified_at = null;
+    public function store(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
+            'password' => 'required|min:8',
+            'role' => 'required|in:admin,user',
+            'active' => 'boolean',
+        ]);
+
+        User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => bcrypt($request->password),
+            'role' => $request->role,
+            'active' => $request->boolean('active', true),
+        ]);
+
+        return redirect()
+            ->route('admin.profiles.index')
+            ->with('success', 'Usuario creado correctamente');
+    }
+
+    public function edit(User $user)
+    {
+        return view('admin.profiles.edit', compact('user'));
+    }
+
+    public function update(Request $request, User $user)
+    {
+        // Evitar que el admin se quite su propio rol
+        if (
+            auth()->id() === $user->id &&
+            $request->role !== 'admin'
+        ) {
+            abort(403, 'No puedes quitarte permisos de administrador');
         }
 
-        $request->user()->save();
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email,' . $user->id,
+            'password' => 'nullable|min:8',
+            'role' => 'required|in:admin,user',
+            'active' => 'boolean',
+        ]);
 
-        return Redirect::route('profile.edit')->with('status', 'profile-updated');
+        $user->update([
+            'name' => $request->name,
+            'email' => $request->email,
+            'role' => $request->role,
+            'active' => $request->boolean('active'),
+        ]);
+
+        if ($request->filled('password')) {
+            $user->update([
+                'password' => bcrypt($request->password),
+            ]);
+        }
+
+        return redirect()
+            ->route('admin.profiles.index')
+            ->with('success', 'Perfil actualizado');
     }
+
 
     /**
      * Delete the user's account.

@@ -11,7 +11,7 @@ Route::get('/', function () {
 });
 
 Route::get('/dashboard', [DashboardController::class, 'index'])
-    ->middleware(['auth'])
+    ->middleware(['auth', 'active.user'])
     ->name('dashboard');
 
 Route::get('/ticket', [TicketController::class, 'create'])
@@ -28,6 +28,26 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::post('/dashboard/reenviar-pendientes', [DashboardController::class, 'reenviarPendientes'])
         ->name('dashboard.reenviar-pendientes');
 });
+
+Route::middleware(['auth', 'admin'])
+    ->prefix('admin/profiles')
+    ->group(function () {
+
+        Route::get('/', [ProfileController::class, 'index'])
+            ->name('admin.profiles.index');
+
+        Route::get('/create', [ProfileController::class, 'create'])
+            ->name('admin.profiles.create');
+
+        Route::post('/', [ProfileController::class, 'store'])
+            ->name('admin.profiles.store');
+
+        Route::get('/{user}/edit', [ProfileController::class, 'edit'])
+            ->name('admin.profiles.edit');
+
+        Route::put('/{user}', [ProfileController::class, 'update'])
+            ->name('admin.profiles.update');
+    });
 
 
 
