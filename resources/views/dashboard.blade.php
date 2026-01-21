@@ -6,7 +6,7 @@
 
             {{-- Header sobrio --}}
             <div class="mb-10 text-center">
-                <img src="{{ asset('images/logo.png') }}" alt="Logo Tickets TI" class="mx-auto h-12" style="width: 200px">
+                <img src="{{ asset('images/logo.png') }}" alt="Logo Tickets TI" class="mx-auto h-12" style="width: 200px; height: auto;">
                 <p class="text-sm text-gray-500 mt-0">
                     Siempre en tu Línea
                 </p>
