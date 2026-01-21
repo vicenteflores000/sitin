@@ -19,5 +19,12 @@ class UserSeeder extends Seeder
             'password' => Hash::make('MDoñihue2021#'),
             'role' => 'admin',
         ]);
+
+        User::create([
+            'name' => 'Vicente Flores',
+            'email' => 'vflores@mdonihue.cl',
+            'password' => Hash::make('12345'),
+            'role' => 'user',
+        ]);
     }
 }

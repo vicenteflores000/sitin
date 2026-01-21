@@ -165,6 +165,7 @@
                 </div>
             </div>
 
+            @if(auth()->user()->role === 'admin')
             {{-- Acciones administrativas --}}
             <div class="mt-6 flex flex-col gap-3 pb-4 flex-shrink-0">
 
@@ -199,6 +200,7 @@
                 </form>
 
             </div>
+            @endif
 
         </div>
     </div>
