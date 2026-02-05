@@ -167,61 +167,85 @@
 
             @if(auth()->user()->role === 'admin')
             {{-- Acciones administrativas --}}
-            <div class="mt-6 flex flex-col gap-3 pb-4 flex-shrink-0">
-
-                <form method="POST" action="{{ route('dashboard.sync-estados') }}">
-                    @csrf
+            <div class="mt-6 pb-4 flex-shrink-0 flex justify-center">
+                <div
+                    x-data="{ open: false, timer: null }"
+                    @mouseenter="clearTimeout(timer); open = true"
+                    @mouseleave="timer = setTimeout(() => open = false, 250)"
+                    class="relative w-full">
                     <button
-                        type="submit"
-                        class="w-full rounded-xl border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                        Actualizar estados desde GLPI
+                        type="button"
+                        class="w-full rounded-xl border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-white-50 transition">
+                        Menú de Administrador
                     </button>
-                </form>
 
-                @if(\App\Models\Ticket::whereIn('estado_envio_glpi', ['pendiente','error'])->exists())
-                <form method="POST" action="{{ route('dashboard.reenviar-pendientes') }}">
-                    @csrf
-                    <button
-                        type="submit"
-                        class="w-full rounded-xl border border-[#6B8E23] px-4 py-2 text-sm text-[#6B8E23] hover:bg-[#F4F7EE]">
-                        Reenviar tickets pendientes a GLPI
-                    </button>
-                </form>
-                @endif
+                    <div
+                        x-show="open"
+                        x-transition:enter="transition ease-out duration-150"
+                        x-transition:enter-start="opacity-0 translate-y-2"
+                        x-transition:enter-end="opacity-100 translate-y-0"
+                        x-transition:leave="transition ease-in duration-150"
+                        x-transition:leave-start="opacity-100 translate-y-0"
+                        x-transition:leave-end="opacity-0 translate-y-2"
+                        @mouseenter="clearTimeout(timer); open = true"
+                        @mouseleave="timer = setTimeout(() => open = false, 250)"
+                        class="absolute left-0 right-0 bottom-full mb-2">
+                        <div class="bg-white border border-gray-200 rounded-xl shadow-lg p-2 space-y-2">
+                            <form method="POST" action="{{ route('dashboard.sync-estados') }}">
+                                @csrf
+                                <button
+                                    type="submit"
+                                    class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                                    Actualizar estados desde GLPI
+                                </button>
+                            </form>
 
-                <form action="{{ url('/admin/glpi/sync-locations') }}" method="POST">
-                    @csrf
+                            @if(\App\Models\Ticket::whereIn('estado_envio_glpi', ['pendiente','error'])->exists())
+                            <form method="POST" action="{{ route('dashboard.reenviar-pendientes') }}">
+                                @csrf
+                                <button
+                                    type="submit"
+                                    class="w-full rounded-lg border border-[#6B8E23] px-3 py-2 text-sm text-[#6B8E23] hover:bg-[#F4F7EE]">
+                                    Reenviar tickets pendientes a GLPI
+                                </button>
+                            </form>
+                            @endif
 
-                    <button
-                        type="submit"
-                        class="w-full rounded-xl border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                        Actualizar ubicaciones GLPI
-                    </button>
-                </form>
+                            <form action="{{ url('/admin/glpi/sync-locations') }}" method="POST">
+                                @csrf
+                                <button
+                                    type="submit"
+                                    class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                                    Actualizar ubicaciones GLPI
+                                </button>
+                            </form>
 
-                <form action="{{ route('admin.profiles.index') }}" method="GET">
-                    <button
-                        type="submit"
-                        class="w-full rounded-xl border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                        <span class="text-center">Gestionar usuarios</span>
-                    </button>
-                </form>
+                            <form action="{{ route('admin.profiles.index') }}" method="GET">
+                                <button
+                                    type="submit"
+                                    class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                                    Gestionar usuarios
+                                </button>
+                            </form>
 
-                <form action="{{ route('admin.locaciones.index') }}" method="GET">
-                    <button
-                        type="submit"
-                        class="w-full rounded-xl border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                        <span class="text-center">Gestionar locaciones</span>
-                    </button>
-                </form>
+                            <form action="{{ route('admin.locaciones.index') }}" method="GET">
+                                <button
+                                    type="submit"
+                                    class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                                    Gestionar locaciones
+                                </button>
+                            </form>
 
-                <form action="{{ route('admin.printers.index') }}" method="GET">
-                    <button
-                        type="submit"
-                        class="w-full rounded-xl border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                        <span class="text-center">Gestionar impresoras</span>
-                    </button>
-                </form>
+                            <form action="{{ route('admin.printers.index') }}" method="GET">
+                                <button
+                                    type="submit"
+                                    class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                                    Gestionar impresoras
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
             </div>
             @endif
 
