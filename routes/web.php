@@ -3,6 +3,7 @@
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GlpiSyncController;
 use App\Http\Controllers\LocacionController;
+use App\Http\Controllers\PrinterController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\TicketController;
 use Illuminate\Support\Facades\Route;
@@ -73,5 +74,12 @@ Route::middleware(['auth', 'admin'])
         Route::get('/locaciones', [LocacionController::class, 'edit'])->name('locacion.edit');
         Route::patch('/locaciones', [LocacionController::class, 'update'])->name('locacion.update');
         Route::delete('/locaciones', [LocacionController::class, 'destroy'])->name('locacion.destroy');
+    });
+
+Route::middleware(['auth', 'admin'])
+    ->prefix('admin/impresoras')
+    ->group(function () {
+        Route::get('/', [PrinterController::class, 'index'])
+            ->name('admin.printers.index');
     });
 require __DIR__ . '/auth.php';
