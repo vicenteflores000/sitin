@@ -7,8 +7,11 @@ use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Mail\UserCreatedCredentials;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class ProfileController extends Controller
@@ -30,23 +33,33 @@ class ProfileController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
-            'password' => 'required|min:8',
             'role' => 'required|in:admin,user',
             'active' => 'boolean',
         ]);
 
-        User::create([
+        $plainPassword = Str::random(12);
+
+        $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
-            'password' => Hash::make($request->password),
+            'password' => Hash::make($plainPassword),
+            'must_change_password' => true,
             'glpi_user_id' => null,
             'role' => $request->role,
             'active' => $request->boolean('active', true),
         ]);
 
+        try {
+            Mail::to($user->email)->send(new UserCreatedCredentials($user, $plainPassword));
+        } catch (\Throwable $exception) {
+            return redirect()
+                ->route('admin.profiles.index')
+                ->with('success', 'Usuario creado. No se pudo enviar el correo con la clave.');
+        }
+
         return redirect()
             ->route('admin.profiles.index')
-            ->with('success', 'Usuario creado correctamente');
+            ->with('success', 'Usuario creado. Se envió una clave al correo.');
     }
 
     public function edit(User $user)

@@ -191,34 +191,7 @@
                         @mouseleave="timer = setTimeout(() => open = false, 250)"
                         class="absolute left-0 right-0 bottom-full mb-2">
                         <div class="bg-white border border-gray-200 rounded-xl shadow-lg p-2 space-y-2">
-                            <form method="POST" action="{{ route('dashboard.sync-estados') }}">
-                                @csrf
-                                <button
-                                    type="submit"
-                                    class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                                    Actualizar estados desde GLPI
-                                </button>
-                            </form>
-
-                            @if(\App\Models\Ticket::whereIn('estado_envio_glpi', ['pendiente','error'])->exists())
-                            <form method="POST" action="{{ route('dashboard.reenviar-pendientes') }}">
-                                @csrf
-                                <button
-                                    type="submit"
-                                    class="w-full rounded-lg border border-[#6B8E23] px-3 py-2 text-sm text-[#6B8E23] hover:bg-[#F4F7EE]">
-                                    Reenviar tickets pendientes a GLPI
-                                </button>
-                            </form>
-                            @endif
-
-                            <form action="{{ url('/admin/glpi/sync-locations') }}" method="POST">
-                                @csrf
-                                <button
-                                    type="submit"
-                                    class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                                    Actualizar ubicaciones GLPI
-                                </button>
-                            </form>
+                            {{-- Opciones GLPI ocultas temporalmente --}}
 
                             <form action="{{ route('admin.profiles.index') }}" method="GET">
                                 <button
@@ -233,6 +206,22 @@
                                     type="submit"
                                     class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">
                                     Gestionar locaciones
+                                </button>
+                            </form>
+
+                            <form action="{{ route('admin.tickets.index') }}" method="GET">
+                                <button
+                                    type="submit"
+                                    class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                                    Gestionar tickets
+                                </button>
+                            </form>
+
+                            <form action="{{ route('admin.calendar.index') }}" method="GET">
+                                <button
+                                    type="submit"
+                                    class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                                    Calendario
                                 </button>
                             </form>
 

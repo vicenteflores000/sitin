@@ -1,25 +1,43 @@
-<x-guest-layout>
-    <div class="mb-4 text-sm text-gray-600">
-        {{ __('Forgot your password? No problem. Just let us know your email address and we will email you a password reset link that will allow you to choose a new one.') }}
+<x-layouts.clean>
+    <div class="w-full h-screen flex flex-col items-center px-4 bg-[#FAFAF7] overflow-hidden">
+        <div class="w-full max-w-md py-8 flex flex-col justify-center" style="height: calc(100vh - 2rem);">
+
+            <div class="mb-6 text-center">
+                <img src="{{ asset('images/logo.png') }}" alt="Logo Tickets TI" class="mx-auto h-12" style="width: 200px; height: auto;">
+                <p class="text-gray-600">Restablecer clave</p>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-xl border border-gray-200 p-6">
+                @if (session('status'))
+                    <div class="mb-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+                        {{ session('status') }}
+                    </div>
+                @endif
+
+                <p class="mb-4 text-sm text-gray-600">
+                    Ingresa tu correo y te enviaremos un enlace para restablecer tu clave.
+                </p>
+
+                <form method="POST" action="{{ route('password.email') }}" class="space-y-4">
+                    @csrf
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1" for="email">Correo</label>
+                        <input id="email" type="email" name="email" value="{{ old('email') }}" required autofocus autocomplete="username"
+                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        @error('email')
+                            <p class="mt-2 text-xs text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div class="pt-2 flex justify-end">
+                        <button type="submit"
+                            class="rounded-xl border border-[#6B8E23] px-6 py-2 text-sm font-medium text-[#6B8E23] bg-[#F4F7EE] hover:bg-[#E9F0DF] transition">
+                            Enviar enlace
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
-
-    <!-- Session Status -->
-    <x-auth-session-status class="mb-4" :status="session('status')" />
-
-    <form method="POST" action="{{ route('password.email') }}">
-        @csrf
-
-        <!-- Email Address -->
-        <div>
-            <x-input-label for="email" :value="__('Email')" />
-            <x-text-input id="email" class="block mt-1 w-full" type="email" name="email" :value="old('email')" required autofocus />
-            <x-input-error :messages="$errors->get('email')" class="mt-2" />
-        </div>
-
-        <div class="flex items-center justify-end mt-4">
-            <x-primary-button>
-                {{ __('Email Password Reset Link') }}
-            </x-primary-button>
-        </div>
-    </form>
-</x-guest-layout>
+</x-layouts.clean>

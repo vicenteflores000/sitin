@@ -4,15 +4,16 @@
 
             <div class="mb-6 text-center">
                 <img src="{{ asset('images/logo.png') }}" alt="Logo Tickets TI" class="mx-auto h-12" style="width: 200px; height: auto;">
-                <p class="text-gray-600">Crear nueva contraseña</p>
+                <p class="text-gray-600">Antes de continuar debes cambiar tu clave</p>
             </div>
 
             <div class="bg-white rounded-xl shadow-xl border border-gray-200 p-6">
-                <form method="POST" action="{{ route('password.store', $request->route('token')) }}" class="space-y-4">
-                    @csrf
+                <div class="mb-4 text-sm text-gray-600">
+                    La clave enviada por correo es provisoria. Crea una nueva para continuar.
+                </div>
 
-                    <input type="hidden" name="token" value="{{ $request->route('token') }}">
-                    <input type="hidden" name="email" value="{{ old('email', $request->email) }}">
+                <form method="POST" action="{{ route('password.force.update') }}" class="space-y-4">
+                    @csrf
 
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1" for="password">Nueva contraseña</label>
@@ -35,7 +36,7 @@
                     <div class="pt-2 flex justify-end">
                         <button type="submit"
                             class="rounded-xl border border-[#6B8E23] px-6 py-2 text-sm font-medium text-[#6B8E23] bg-[#F4F7EE] hover:bg-[#E9F0DF] transition">
-                            Restablecer clave
+                            Guardar nueva clave
                         </button>
                     </div>
                 </form>

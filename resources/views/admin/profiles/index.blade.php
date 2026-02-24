@@ -101,11 +101,11 @@
                                 :readonly="editingUser">
                         </div>
 
-                        {{-- Contraseña (solo si creación) --}}
+                        {{-- Contraseña (autogenerada al crear) --}}
                         <div class="mb-4" x-show="!editingUser">
-                            <label class="block text-sm font-medium mb-1">Contraseña</label>
-                            <input type="password" name="password" required
-                                class="w-full border rounded px-3 py-2">
+                            <div class="text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded px-3 py-2">
+                                Se enviará una clave automática al correo del usuario.
+                            </div>
                         </div>
 
                         {{-- Rol --}}

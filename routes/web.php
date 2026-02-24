@@ -4,26 +4,25 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GlpiSyncController;
 use App\Http\Controllers\LocacionController;
 use App\Http\Controllers\PrinterController;
+use App\Http\Controllers\AdminTicketController;
+use App\Http\Controllers\AdminCalendarController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\TicketController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('welcome');
-});
+Route::get('/', [TicketController::class, 'create'])
+    ->name('home');
 
 Route::get('/dashboard', [DashboardController::class, 'index'])
-    ->middleware(['auth', 'active.user'])
+    ->middleware(['auth', 'active.user', 'force.password'])
     ->name('dashboard');
 
 Route::get('/ticket', [TicketController::class, 'create'])
-    ->middleware(['auth'])
     ->name('ticket.create');
-Route::post('/ticket', [TicketController::class, 'store'])
-    ->middleware('auth');
+Route::post('/ticket', [TicketController::class, 'store']);
 
 
-Route::middleware(['auth', 'admin'])->group(function () {
+Route::middleware(['auth', 'force.password', 'admin'])->group(function () {
     Route::post('/admin/glpi/sync-locations', [GlpiSyncController::class, 'syncLocations']);
     Route::post('/dashboard/sync-estados', [DashboardController::class, 'syncEstados'])
         ->name('dashboard.sync-estados');
@@ -31,7 +30,7 @@ Route::middleware(['auth', 'admin'])->group(function () {
         ->name('dashboard.reenviar-pendientes');
 });
 
-Route::middleware(['auth', 'admin'])
+Route::middleware(['auth', 'force.password', 'admin'])
     ->prefix('admin/profiles')
     ->group(function () {
 
@@ -54,7 +53,7 @@ Route::middleware(['auth', 'admin'])
         Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     });
 
-Route::middleware(['auth', 'admin'])
+Route::middleware(['auth', 'force.password', 'admin'])
     ->prefix('admin/locaciones')
     ->group(function () {
 
@@ -76,10 +75,46 @@ Route::middleware(['auth', 'admin'])
         Route::delete('/locaciones', [LocacionController::class, 'destroy'])->name('locacion.destroy');
     });
 
-Route::middleware(['auth', 'admin'])
+Route::middleware(['auth', 'force.password', 'admin'])
     ->prefix('admin/impresoras')
     ->group(function () {
         Route::get('/', [PrinterController::class, 'index'])
             ->name('admin.printers.index');
+    });
+
+Route::middleware(['auth', 'force.password', 'admin'])
+    ->prefix('admin/tickets')
+    ->group(function () {
+        Route::get('/', [AdminTicketController::class, 'index'])
+            ->name('admin.tickets.index');
+        Route::post('/{ticket}/assign', [AdminTicketController::class, 'assignToMe'])
+            ->name('admin.tickets.assign');
+        Route::post('/{ticket}/assign-user', [AdminTicketController::class, 'assignUser'])
+            ->name('admin.tickets.assign-user');
+        Route::post('/{ticket}/status', [AdminTicketController::class, 'updateStatus'])
+            ->name('admin.tickets.status');
+        Route::post('/{ticket}/resolve', [AdminTicketController::class, 'resolve'])
+            ->name('admin.tickets.resolve');
+        Route::post('/{ticket}/parts', [AdminTicketController::class, 'addPart'])
+            ->name('admin.tickets.parts');
+        Route::post('/{ticket}/actions', [AdminTicketController::class, 'addAction'])
+            ->name('admin.tickets.actions');
+        Route::post('/{ticket}/classification', [AdminTicketController::class, 'updateClassification'])
+            ->name('admin.tickets.classification');
+    });
+
+Route::middleware(['auth', 'force.password', 'admin'])
+    ->prefix('admin/calendario')
+    ->group(function () {
+        Route::get('/', [AdminCalendarController::class, 'index'])
+            ->name('admin.calendar.index');
+        Route::get('/events', [AdminCalendarController::class, 'events'])
+            ->name('admin.calendar.events');
+        Route::post('/events', [AdminCalendarController::class, 'store'])
+            ->name('admin.calendar.store');
+        Route::put('/events/{schedule}', [AdminCalendarController::class, 'update'])
+            ->name('admin.calendar.update');
+        Route::delete('/events/{schedule}', [AdminCalendarController::class, 'destroy'])
+            ->name('admin.calendar.destroy');
     });
 require __DIR__ . '/auth.php';

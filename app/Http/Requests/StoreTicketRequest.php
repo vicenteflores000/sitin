@@ -13,12 +13,19 @@ class StoreTicketRequest extends FormRequest
 
     public function rules()
     {
-        return [
+        $rules = [
             'tipo' => 'required|in:Soporte,Administrativo,Mejora',
-            'area' => 'required|in:CESFAM,Urgencia,Registro Civil,Administracion',
             'categoria' => 'required|in:Computador,Impresora,Internet,Sistema,Correo,Telefonia,Otro',
-            'impacto' => 'required|in:No impide trabajar,Dificulta el trabajo,Impide atender usuarios',
+            'impacto' => 'nullable|in:No impide trabajar,Dificulta el trabajo,Impide atender usuarios',
             'descripcion' => 'required|string|max:300',
+            'locacion_id' => 'required|exists:locaciones,id',
         ];
+
+        if (!auth()->check()) {
+            $rules['auth_email'] = 'required|email';
+            $rules['auth_password'] = 'required|string';
+        }
+
+        return $rules;
     }
 }

@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <title>{{ config('app.name') }}</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @stack('head')
     <style>
         body, html {
             overflow: hidden;
@@ -14,5 +15,6 @@
 </head>
 <body class="bg-[#FAFAF7] text-gray-800">
     {{ $slot }}
+    @stack('scripts')
 </body>
 </html>

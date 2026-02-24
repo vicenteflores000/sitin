@@ -7,51 +7,129 @@ use App\Services\IaSuggestionService;
 use App\Services\PriorityService;
 use App\Services\GlpiService;
 use App\Models\Ticket;
-use App\Models\GlpiLocation;
+use App\Models\Locacion;
+use App\Models\TicketStatusEvent;
+use App\Mail\TicketCreated;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 class TicketController extends Controller
 {
     public function create()
     {
-        $locations = GlpiLocation::orderBy('name')->get();
+        $locaciones = Locacion::with('padre')
+            ->whereNotNull('locacion_padre_id')
+            ->orderBy('nombre')
+            ->get();
 
-        return view('ticket.create', compact('locations'));
+        return view('ticket.create', compact('locaciones'));
     }
 
     public function store(StoreTicketRequest $request)
     {
-        $user = auth()->user();
+        if (!auth()->check()) {
+            $credentials = [
+                'email' => $request->input('auth_email'),
+                'password' => $request->input('auth_password'),
+            ];
 
-        if (! $user->glpi_user_id) {
-            abort(403, 'Usuario no vinculado con GLPI');
+            if (!Auth::attempt($credentials)) {
+                if ($request->expectsJson()) {
+                    return response()->json([
+                        'message' => 'Correo o clave inválidos.',
+                    ], 422);
+                }
+
+                return back()
+                    ->withErrors(['auth_email' => 'Correo o clave inválidos.'])
+                    ->withInput($request->except('auth_password'));
+            }
+
+            $request->session()->regenerate();
+        }
+
+        $user = auth()->user();
+        if ($user?->must_change_password) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'Debes cambiar tu clave provisoria antes de enviar un ticket.',
+                    'redirect' => route('password.force.show'),
+                ], 423);
+            }
+
+            $request->session()->put('url.intended', $request->fullUrl());
+
+            return redirect()->route('password.force.show');
         }
 
         $ticket = Ticket::create([
             'tipo' => $request->tipo,
-            'area' => $request->area,
+            'area' => $request->input('area') ?: 'No especificado',
             'categoria' => $request->categoria,
-            'impacto' => $request->impacto,
+            'impacto' => $request->input('impacto') ?: 'No especificado',
             'descripcion' => trim($request->descripcion),
-            'usuario_mail' => auth()->user()->email,
-            'glpi_location_id' => $request->glpi_location_id,
-            'estado_glpi' => 'Enviado',
+            'usuario_mail' => $user->email,
+            'locacion_id' => $request->locacion_id,
+            'glpi_location_id' => $request->input('glpi_location_id'),
+            'estado_glpi' => null,
 
             // datos ocultos
             'pc' => gethostname(),
             'usuario' => $_SERVER['USERNAME'] ?? null,
             'ip_origen' => $request->ip(),
             'origen' => 'Formulario TI',
-            'estado_envio_glpi' => 'pendiente',
+            'estado_envio_glpi' => null,
         ]);
+
+        TicketStatusEvent::create([
+            'ticket_id' => $ticket->id,
+            'from_status' => null,
+            'to_status' => 'nuevo',
+            'started_at' => now(),
+            'changed_by' => $user->id,
+        ]);
+        $ticket->load('locacion.padre');
+
         $priorityData = app(PriorityService::class)->calculate($ticket);
         $ticket->update($priorityData);
         $iaData = app(IaSuggestionService::class)->analyze($ticket->descripcion);
         $ticket->update($iaData);
-        $glpi = app(GlpiService::class)->createTicket($ticket);
+        $glpiReady = $user->glpi_user_id
+            && $ticket->glpi_location_id
+            && config('services.glpi.url')
+            && config('services.glpi.app_token')
+            && config('services.glpi.user_token');
+
+        if ($glpiReady) {
+            $ticket->update([
+                'estado_glpi' => 'Enviado',
+                'estado_envio_glpi' => 'pendiente',
+            ]);
+            app(GlpiService::class)->createTicket($ticket);
+        }
+
+        try {
+            Mail::to('informatica@mdonihue.cl')
+                ->cc($user->email)
+                ->send(new TicketCreated($ticket));
+        } catch (\Throwable $exception) {
+            Log::warning('No se pudo enviar correo de ticket', [
+                'ticket_id' => $ticket->id,
+                'error' => $exception->getMessage(),
+            ]);
+        }
 
 
-        return view('ticket.confirmacion', [
-            'ticket_id' => $ticket->id
-        ]);
+        if ($request->expectsJson()) {
+            return response()->json([
+                'status' => 'ok',
+                'ticket_id' => $ticket->id,
+            ]);
+        }
+
+        return redirect()
+            ->route('ticket.create')
+            ->with('success', "Ticket enviado correctamente con el ID: {$ticket->id}");
     }
 }
