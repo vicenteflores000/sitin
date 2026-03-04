@@ -156,11 +156,12 @@ class AdminCalendarController extends Controller
 
         $modalityLabel = $schedule->modality === 'terreno' ? 'Visita en terreno' : 'Atención remota';
 
+        $description = nl2br(e($ticket->descripcion ?? ''));
         $payload = [
             'subject' => "Ticket #{$ticket->id} · {$ticket->categoria}",
             'body' => [
                 'contentType' => 'HTML',
-                'content' => "<strong>Ticket #{$ticket->id}</strong><br>{$ticket->descripcion}<br><br>Modalidad: {$modalityLabel}",
+                'content' => "<strong>Ticket #{$ticket->id}</strong><br>{$description}<br><br>Modalidad: {$modalityLabel}",
             ],
             'start' => [
                 'dateTime' => $schedule->start_at->toIso8601String(),
@@ -203,6 +204,7 @@ class AdminCalendarController extends Controller
         $schedule->loadMissing('ticket', 'ticket.currentAssignment.technician');
         $modalityLabel = $schedule->modality === 'terreno' ? 'Visita en terreno' : 'Atención remota';
 
+        $description = nl2br(e($schedule->ticket->descripcion ?? ''));
         $payload = [
             'start' => [
                 'dateTime' => $schedule->start_at->toIso8601String(),
@@ -214,7 +216,7 @@ class AdminCalendarController extends Controller
             ],
             'body' => [
                 'contentType' => 'HTML',
-                'content' => "<strong>Ticket #{$schedule->ticket->id}</strong><br>{$schedule->ticket->descripcion}<br><br>Modalidad: {$modalityLabel}",
+                'content' => "<strong>Ticket #{$schedule->ticket->id}</strong><br>{$description}<br><br>Modalidad: {$modalityLabel}",
             ],
         ];
 

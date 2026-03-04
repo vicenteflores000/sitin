@@ -8,11 +8,14 @@ use App\Services\PriorityService;
 use App\Services\GlpiService;
 use App\Models\Ticket;
 use App\Models\Locacion;
+use App\Models\AllowedDomain;
 use App\Models\TicketStatusEvent;
 use App\Mail\TicketCreated;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
 
 class TicketController extends Controller
 {
@@ -34,7 +37,35 @@ class TicketController extends Controller
                 'password' => $request->input('auth_password'),
             ];
 
+            $throttleKey = $this->throttleKey($credentials['email'] ?? '', $request->ip());
+            if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
+                $seconds = RateLimiter::availableIn($throttleKey);
+                return $this->authErrorResponse($request, 'Demasiados intentos. Intenta en unos minutos.', 429, [
+                    'seconds' => $seconds,
+                ]);
+            }
+
+            $validator = validator($credentials, [
+                'email' => [
+                    'required',
+                    'string',
+                    'email',
+                'max:255',
+                function ($attribute, $value, $fail) {
+                        if (! AllowedDomain::allowsEmail($value)) {
+                            $fail('Debe usar un correo institucional.');
+                        }
+                    },
+                ],
+                'password' => ['required', 'string'],
+            ]);
+
+            if ($validator->fails()) {
+                return $this->authErrorResponse($request, $validator->errors()->first(), 422);
+            }
+
             if (!Auth::attempt($credentials)) {
+                RateLimiter::hit($throttleKey);
                 if ($request->expectsJson()) {
                     return response()->json([
                         'message' => 'Correo o clave inválidos.',
@@ -46,10 +77,15 @@ class TicketController extends Controller
                     ->withInput($request->except('auth_password'));
             }
 
+            RateLimiter::clear($throttleKey);
             $request->session()->regenerate();
         }
 
         $user = auth()->user();
+        if ($user && ! $user->isActive()) {
+            auth()->logout();
+            return $this->authErrorResponse($request, 'Usuario desactivado.', 403);
+        }
         if ($user?->must_change_password) {
             if ($request->expectsJson()) {
                 return response()->json([
@@ -131,5 +167,24 @@ class TicketController extends Controller
         return redirect()
             ->route('ticket.create')
             ->with('success', "Ticket enviado correctamente con el ID: {$ticket->id}");
+    }
+
+    protected function throttleKey(string $email, string $ip): string
+    {
+        return Str::transliterate(Str::lower($email) . '|' . $ip);
+    }
+
+    protected function authErrorResponse(StoreTicketRequest $request, string $message, int $status = 422, array $meta = [])
+    {
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => $message,
+                ...$meta,
+            ], $status);
+        }
+
+        return back()
+            ->withErrors(['auth_email' => $message])
+            ->withInput($request->except('auth_password'));
     }
 }

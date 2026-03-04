@@ -49,5 +49,12 @@ return [
         'timezone' => env('MICROSOFT_CALENDAR_TIMEZONE', 'UTC'),
     ],
 
+    'microsoft' => [
+        'client_id' => env('MICROSOFT_OAUTH_CLIENT_ID', env('MICROSOFT_CLIENT_ID')),
+        'client_secret' => env('MICROSOFT_OAUTH_CLIENT_SECRET', env('MICROSOFT_CLIENT_SECRET')),
+        'redirect' => env('MICROSOFT_OAUTH_REDIRECT_URI'),
+        'tenant' => env('MICROSOFT_OAUTH_TENANT', 'organizations'),
+    ],
+
 
 ];

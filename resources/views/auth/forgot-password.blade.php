@@ -18,7 +18,7 @@
                     Ingresa tu correo y te enviaremos un enlace para restablecer tu clave.
                 </p>
 
-                <form method="POST" action="{{ route('password.email') }}" class="space-y-4">
+                <form method="POST" action="{{ route('password.email') }}" class="space-y-4" id="reset-request-form">
                     @csrf
 
                     <div>
@@ -31,7 +31,7 @@
                     </div>
 
                     <div class="pt-2 flex justify-end">
-                        <button type="submit"
+                        <button type="submit" id="reset-request-submit"
                             class="rounded-xl border border-[#6B8E23] px-6 py-2 text-sm font-medium text-[#6B8E23] bg-[#F4F7EE] hover:bg-[#E9F0DF] transition">
                             Enviar enlace
                         </button>
@@ -40,4 +40,20 @@
             </div>
         </div>
     </div>
+
+    @push('scripts')
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                const form = document.getElementById('reset-request-form');
+                const button = document.getElementById('reset-request-submit');
+                if (!form || !button) return;
+
+                form.addEventListener('submit', () => {
+                    button.disabled = true;
+                    button.classList.add('opacity-70', 'cursor-not-allowed');
+                    button.textContent = 'Enviando...';
+                });
+            });
+        </script>
+    @endpush
 </x-layouts.clean>

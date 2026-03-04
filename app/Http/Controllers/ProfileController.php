@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
 use App\Models\User;
+use App\Models\AllowedDomain;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -20,6 +21,7 @@ class ProfileController extends Controller
     {
         return view('admin.profiles.index', [
             'users' => User::orderBy('name')->get(),
+            'allowedDomains' => AllowedDomain::orderBy('domain')->get(),
         ]);
     }
 
@@ -32,7 +34,16 @@ class ProfileController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
+            'email' => [
+                'required',
+                'email',
+                'unique:users,email',
+                function ($attribute, $value, $fail) {
+                    if (! AllowedDomain::allowsEmail($value)) {
+                        $fail('Dominio no permitido.');
+                    }
+                },
+            ],
             'role' => 'required|in:admin,user',
             'active' => 'boolean',
         ]);
@@ -79,7 +90,16 @@ class ProfileController extends Controller
 
         $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email,' . $user->id,
+            'email' => [
+                'required',
+                'email',
+                'unique:users,email,' . $user->id,
+                function ($attribute, $value, $fail) {
+                    if (! AllowedDomain::allowsEmail($value)) {
+                        $fail('Dominio no permitido.');
+                    }
+                },
+            ],
             'password' => 'nullable|min:8',
             'role' => 'required|in:admin,user',
             'active' => 'boolean',

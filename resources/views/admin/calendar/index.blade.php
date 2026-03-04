@@ -1,6 +1,5 @@
 <x-layouts.clean>
     @push('head')
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css">
         <style>
             .fc {
                 font-family: inherit;
@@ -192,7 +191,13 @@
     </div>
 
     @push('scripts')
-        <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+        <script src="{{ asset('vendor/fullcalendar/core.min.js') }}"></script>
+        <script src="{{ asset('vendor/fullcalendar/daygrid.min.js') }}"></script>
+        <script src="{{ asset('vendor/fullcalendar/timegrid.min.js') }}"></script>
+        <script src="{{ asset('vendor/fullcalendar/interaction.min.js') }}"></script>
+    @endpush
+
+    @push('scripts')
         <script>
             document.addEventListener('DOMContentLoaded', () => {
                 const calendarEl = document.getElementById('calendar');
@@ -335,9 +340,14 @@
                     }
                 });
 
-                const calendar = new FullCalendar.Calendar(calendarEl, {
+                const calendar = new window.FullCalendar.Calendar(calendarEl, {
                     initialView: 'timeGridWeek',
-                    locale: 'es',
+                    locale: window.FullCalendarLocaleEs || 'es',
+                    plugins: [
+                        window.FullCalendar.DayGrid,
+                        window.FullCalendar.TimeGrid,
+                        window.FullCalendar.Interaction,
+                    ],
                     height: '100%',
                     nowIndicator: true,
                     editable: true,

@@ -22,6 +22,7 @@ class UserCreatedCredentials extends Mailable
         return $this->subject('Tu acceso a Tickets TI')
             ->view('emails.auth.user-created', [
                 'logoUrl' => asset('images/logo.png'),
+                'homeUrl' => route('home'),
             ]);
     }
 }

@@ -41,6 +41,14 @@
                             Al ingresar por primera vez se te pedirá cambiarla.
                         </td>
                     </tr>
+                    <tr>
+                        <td style="padding-top:20px; text-align:center;">
+                            <a href="{{ $homeUrl ?? route('home') }}"
+                               style="display:inline-block; background:#6B8E23; color:#ffffff; text-decoration:none; padding:10px 18px; border-radius:8px; font-size:14px; font-weight:600;">
+                                Ir a Tickets TI
+                            </a>
+                        </td>
+                    </tr>
                 </table>
             </td>
         </tr>

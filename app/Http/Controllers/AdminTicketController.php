@@ -55,6 +55,10 @@ class AdminTicketController extends Controller
 
     public function updateStatus(Request $request, Ticket $ticket): RedirectResponse
     {
+        if (! $this->canManageTicket($ticket)) {
+            return back()->withErrors(['status' => 'Solo el técnico asignado puede cambiar el estado.']);
+        }
+
         $data = $request->validate([
             'to_status' => 'required|in:nuevo,asignado,en_progreso,standby,resuelto,cerrado',
             'reason' => 'nullable|string|max:255',
@@ -159,6 +163,10 @@ class AdminTicketController extends Controller
 
     public function addPart(Request $request, Ticket $ticket): RedirectResponse
     {
+        if (! $this->canManageTicket($ticket)) {
+            return back()->withErrors(['part' => 'Solo el técnico asignado puede agregar repuestos.']);
+        }
+
         $data = $request->validate([
             'part_name' => 'required|string|max:255',
             'quantity' => 'required|integer|min:1',

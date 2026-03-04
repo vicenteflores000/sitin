@@ -52,6 +52,17 @@
                         class="w-full rounded-xl border border-[#6B8E23] px-4 py-2 text-sm font-medium text-[#6B8E23] bg-[#F4F7EE] hover:bg-[#E9F0DF] transition">
                         Iniciar sesión
                     </button>
+
+                    <a href="{{ route('auth.microsoft.redirect') }}"
+                        class="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition">
+                        <svg class="w-4 h-4" viewBox="0 0 24 24" aria-hidden="true">
+                            <path fill="#F25022" d="M1 1h10v10H1z" />
+                            <path fill="#7FBA00" d="M13 1h10v10H13z" />
+                            <path fill="#00A4EF" d="M1 13h10v10H1z" />
+                            <path fill="#FFB900" d="M13 13h10v10H13z" />
+                        </svg>
+                        Iniciar con Outlook
+                    </a>
                 </form>
             </div>
         </div>

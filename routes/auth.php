@@ -8,6 +8,7 @@ use App\Http\Controllers\Auth\ForcePasswordController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
+use App\Http\Controllers\Auth\MicrosoftAuthController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use Illuminate\Support\Facades\Route;
@@ -22,10 +23,17 @@ Route::middleware('guest')->group(function () {
 
     Route::post('login', [AuthenticatedSessionController::class, 'store']);
 
+    Route::get('auth/microsoft', [MicrosoftAuthController::class, 'redirect'])
+        ->name('auth.microsoft.redirect');
+
+    Route::get('auth/microsoft/callback', [MicrosoftAuthController::class, 'callback'])
+        ->name('auth.microsoft.callback');
+
     Route::get('reestablecer', [PasswordResetLinkController::class, 'create'])
         ->name('password.request');
 
     Route::post('reestablecer', [PasswordResetLinkController::class, 'store'])
+        ->middleware('throttle:5,1')
         ->name('password.email');
 
     Route::get('reestablecer/{token}', [NewPasswordController::class, 'create'])

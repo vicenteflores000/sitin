@@ -1,7 +1,7 @@
 <x-layouts.clean>
     <div class="w-full h-screen flex flex-col items-center px-4 bg-[#FAFAF7] overflow-hidden">
 
-        <div x-data="{ showModal: false, editingUser: null }" class="w-full max-w-xl py-8 flex flex-col justify-center" style="height: calc(100vh - 2rem);">
+        <div x-data="{ showModal: false, editingUser: null, showDomainModal: false }" class="w-full max-w-xl py-8 flex flex-col justify-center" style="height: calc(100vh - 2rem);">
 
             <div class="mb-6 text-center">
                 <img src="{{ asset('images/logo.png') }}" alt="Logo Tickets TI" class="mx-auto h-12" style="width: 200px; height: auto;">
@@ -25,6 +25,11 @@
                             class="mb-3 rounded-xl border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                             @click="editingUser = null; showModal = true">
                             + Crear usuario
+                        </button>
+                        <button
+                            class="mb-3 rounded-xl border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                            @click="showDomainModal = true">
+                            Dominios permitidos
                         </button>
                     </div>
                 </div>
@@ -78,7 +83,7 @@
                     <h2 class="text-lg font-semibold mb-4" x-text="editingUser ? 'Editar usuario' : 'Crear usuario'"></h2>
 
                     <form :action="editingUser ? `/admin/profiles/${editingUser.id}` : '{{ route('admin.profiles.store') }}'"
-                        method="POST">
+                        method="POST" class="profile-form">
                         @csrf
                         <template x-if="editingUser">
                             <input type="hidden" name="_method" value="PUT">
@@ -136,7 +141,7 @@
                                 Cancelar
                             </button>
                             <button type="submit"
-                                class="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"
+                                class="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 profile-submit"
                                 x-text="editingUser ? 'Actualizar' : 'Crear'">
                                 Crear
                             </button>
@@ -144,6 +149,67 @@
                     </form>
                 </div>
             </div>
+
+            <div x-show="showDomainModal"
+                class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div class="bg-white rounded-lg shadow-lg w-full max-w-md p-6" @click.away="showDomainModal=false">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-lg font-semibold">Dominios permitidos</h2>
+                        <button type="button"
+                            class="text-sm text-gray-500 hover:text-gray-700"
+                            @click="showDomainModal=false">
+                            Cerrar
+                        </button>
+                    </div>
+
+                    <form method="POST" action="{{ route('admin.domains.store') }}" class="flex items-center gap-2">
+                        @csrf
+                        <input type="text" name="domain" placeholder="mdonihue.cl"
+                            class="flex-1 border rounded px-3 py-2 text-sm" required>
+                        <button type="submit"
+                            class="rounded-lg border border-[#6B8E23] px-3 py-2 text-sm text-[#6B8E23] hover:bg-[#F4F7EE]">
+                            Agregar
+                        </button>
+                    </form>
+
+                    <div class="mt-4 space-y-2">
+                        @forelse($allowedDomains as $domain)
+                        <div class="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm">
+                            <span class="text-gray-700">{{ $domain->domain }}</span>
+                            <form method="POST" action="{{ route('admin.domains.destroy', $domain) }}">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="text-xs text-red-600 hover:underline">Eliminar</button>
+                            </form>
+                        </div>
+                        @empty
+                        <div class="rounded-lg border border-dashed border-gray-200 px-3 py-3 text-sm text-gray-500">
+                            No hay dominios registrados.
+                        </div>
+                        @endforelse
+                    </div>
+
+                    <p class="mt-4 text-xs text-gray-500">
+                        Solo los correos con estos dominios podrán iniciar sesión y crear tickets.
+                    </p>
+                </div>
+            </div>
         </div>
     </div>
+
+    @push('scripts')
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                document.querySelectorAll('.profile-form').forEach((form) => {
+                    form.addEventListener('submit', () => {
+                        const submit = form.querySelector('.profile-submit');
+                        if (!submit) return;
+                        submit.disabled = true;
+                        submit.classList.add('opacity-70', 'cursor-not-allowed');
+                        submit.textContent = 'Enviando...';
+                    });
+                });
+            });
+        </script>
+    @endpush
     </x-app-layout>

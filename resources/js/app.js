@@ -3,10 +3,12 @@ import './bootstrap';
 import Alpine from 'alpinejs';
 import $ from 'jquery';
 import 'select2/dist/css/select2.css';
+import esLocale from '@fullcalendar/core/locales/es';
 
 window.Alpine = Alpine;
 window.$ = $;
 window.jQuery = $;
+window.FullCalendarLocaleEs = esLocale;
 
 Alpine.start();
 

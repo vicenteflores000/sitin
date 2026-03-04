@@ -7,6 +7,7 @@ use App\Http\Controllers\PrinterController;
 use App\Http\Controllers\AdminTicketController;
 use App\Http\Controllers\AdminCalendarController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\AllowedDomainController;
 use App\Http\Controllers\TicketController;
 use Illuminate\Support\Facades\Route;
 
@@ -19,10 +20,11 @@ Route::get('/dashboard', [DashboardController::class, 'index'])
 
 Route::get('/ticket', [TicketController::class, 'create'])
     ->name('ticket.create');
-Route::post('/ticket', [TicketController::class, 'store']);
+Route::post('/ticket', [TicketController::class, 'store'])
+    ->middleware('throttle:5,1');
 
 
-Route::middleware(['auth', 'force.password', 'admin'])->group(function () {
+Route::middleware(['auth', 'active.user', 'force.password', 'admin'])->group(function () {
     Route::post('/admin/glpi/sync-locations', [GlpiSyncController::class, 'syncLocations']);
     Route::post('/dashboard/sync-estados', [DashboardController::class, 'syncEstados'])
         ->name('dashboard.sync-estados');
@@ -30,7 +32,7 @@ Route::middleware(['auth', 'force.password', 'admin'])->group(function () {
         ->name('dashboard.reenviar-pendientes');
 });
 
-Route::middleware(['auth', 'force.password', 'admin'])
+Route::middleware(['auth', 'active.user', 'force.password', 'admin'])
     ->prefix('admin/profiles')
     ->group(function () {
 
@@ -53,7 +55,7 @@ Route::middleware(['auth', 'force.password', 'admin'])
         Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     });
 
-Route::middleware(['auth', 'force.password', 'admin'])
+Route::middleware(['auth', 'active.user', 'force.password', 'admin'])
     ->prefix('admin/locaciones')
     ->group(function () {
 
@@ -75,14 +77,23 @@ Route::middleware(['auth', 'force.password', 'admin'])
         Route::delete('/locaciones', [LocacionController::class, 'destroy'])->name('locacion.destroy');
     });
 
-Route::middleware(['auth', 'force.password', 'admin'])
+Route::middleware(['auth', 'active.user', 'force.password', 'admin'])
+    ->prefix('admin/dominios')
+    ->group(function () {
+        Route::post('/', [AllowedDomainController::class, 'store'])
+            ->name('admin.domains.store');
+        Route::delete('/{domain}', [AllowedDomainController::class, 'destroy'])
+            ->name('admin.domains.destroy');
+    });
+
+Route::middleware(['auth', 'active.user', 'force.password', 'admin'])
     ->prefix('admin/impresoras')
     ->group(function () {
         Route::get('/', [PrinterController::class, 'index'])
             ->name('admin.printers.index');
     });
 
-Route::middleware(['auth', 'force.password', 'admin'])
+Route::middleware(['auth', 'active.user', 'force.password', 'admin'])
     ->prefix('admin/tickets')
     ->group(function () {
         Route::get('/', [AdminTicketController::class, 'index'])
@@ -103,7 +114,7 @@ Route::middleware(['auth', 'force.password', 'admin'])
             ->name('admin.tickets.classification');
     });
 
-Route::middleware(['auth', 'force.password', 'admin'])
+Route::middleware(['auth', 'active.user', 'force.password', 'admin'])
     ->prefix('admin/calendario')
     ->group(function () {
         Route::get('/', [AdminCalendarController::class, 'index'])
