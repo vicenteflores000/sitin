@@ -1,4 +1,19 @@
 <x-layouts.clean>
+    @push('head')
+        <style>
+            @keyframes dotPulse {
+                0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+                40% { transform: scale(1); opacity: 1; }
+            }
+            .auth-dot {
+                width: 10px;
+                height: 10px;
+                border-radius: 9999px;
+                display: inline-block;
+                animation: dotPulse 1.2s infinite ease-in-out;
+            }
+        </style>
+    @endpush
     <style>
         .select2-container .select2-selection--single {
             height: 42px;
@@ -262,7 +277,7 @@
             </div>
 
             <div class="mt-4">
-                <a href="{{ route('auth.microsoft.redirect') }}"
+                <a href="{{ route('auth.microsoft.redirect') }}" id="auth-outlook"
                     class="w-full inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition">
                     <svg class="w-4 h-4" viewBox="0 0 24 24" aria-hidden="true">
                         <path fill="#F25022" d="M1 1h10v10H1z" />
@@ -276,6 +291,17 @@
         </div>
     </div>
 
+    <div id="auth-loading" class="fixed inset-0 hidden items-center justify-center bg-black/80 backdrop-blur-sm z-50">
+        <div class="text-center text-white">
+            <div class="flex items-center justify-center gap-2 mb-4">
+                <span class="auth-dot bg-[#6B8E23]" style="animation-delay: 0s;"></span>
+                <span class="auth-dot bg-[#6B8E23]" style="animation-delay: 0.2s;"></span>
+                <span class="auth-dot bg-[#6B8E23]" style="animation-delay: 0.4s;"></span>
+            </div>
+            <div class="text-sm tracking-wide">Iniciando su sesión, espere un momento</div>
+        </div>
+    </div>
+
     <script>
         (function () {
             const ticketForm = document.getElementById('ticket-form');
@@ -286,6 +312,8 @@
             const authPasswordHidden = document.getElementById('auth_password_hidden');
             const cancelButton = document.getElementById('auth-cancel');
             const submitButton = document.getElementById('auth-submit');
+            const outlookButton = document.getElementById('auth-outlook');
+            const authLoading = document.getElementById('auth-loading');
             const ticketSubmit = document.getElementById('ticket-submit');
             const ticketSubmitText = document.getElementById('ticket-submit-text');
             let requiresAuth = {{ auth()->check() ? 'false' : 'true' }};
@@ -408,6 +436,18 @@
                 readyToSubmit = false;
             }
 
+            function showAuthLoading() {
+                if (!authLoading) return;
+                authLoading.classList.remove('hidden');
+                authLoading.classList.add('flex');
+            }
+
+            function hideAuthLoading() {
+                if (!authLoading) return;
+                authLoading.classList.add('hidden');
+                authLoading.classList.remove('flex');
+            }
+
             ticketForm.addEventListener('submit', (event) => {
                 if (isSubmitting) {
                     event.preventDefault();
@@ -470,6 +510,7 @@
                 if (response.status === 423) {
                     const payload = await response.json().catch(() => ({}));
                     showToast(payload.message || 'Debes cambiar tu clave provisoria.');
+                    hideAuthLoading();
                     if (payload.redirect) {
                         window.location.href = payload.redirect;
                     }
@@ -479,11 +520,13 @@
                 if (response.status === 422) {
                     const payload = await response.json().catch(() => ({}));
                     showToast(payload.message || 'Correo o clave inválidos.');
+                    hideAuthLoading();
                     return false;
                 }
 
                 if (!response.ok) {
                     showToast('No se pudo iniciar sesión.');
+                    hideAuthLoading();
                     return false;
                 }
 
@@ -511,6 +554,7 @@
                         const payload = await response.json().catch(() => ({}));
                         showToast(payload.message || 'Debes cambiar tu clave provisoria.');
                         setSubmitting(false);
+                        hideAuthLoading();
                         if (payload.redirect) {
                             window.location.href = payload.redirect;
                         }
@@ -521,6 +565,7 @@
                         const payload = await response.json().catch(() => ({}));
                         showToast(payload.message || 'No se pudo enviar el ticket.');
                         setSubmitting(false);
+                        hideAuthLoading();
                         return;
                     }
 
@@ -547,14 +592,18 @@
                     }
                     showToast(`Ticket enviado correctamente con el ID: ${payload.ticket_id}`, 'success');
                     setSubmitting(false);
+                    hideAuthLoading();
                 } catch (error) {
                     showToast('No se pudo enviar el ticket.');
                     setSubmitting(false);
+                    hideAuthLoading();
                 }
             }
 
             submitButton.addEventListener('click', async () => {
+                showAuthLoading();
                 if (!authEmailInput.value.trim() || !authPasswordInput.value.trim()) {
+                    hideAuthLoading();
                     return;
                 }
 
@@ -563,6 +612,7 @@
 
                 if (authContext !== 'ticket') {
                     if (isSubmitting) {
+                        hideAuthLoading();
                         return;
                     }
                     isSubmitting = true;
@@ -597,6 +647,7 @@
                     showToast('Sesión iniciada correctamente', 'success');
                     isSubmitting = false;
                     submitButton.disabled = false;
+                    hideAuthLoading();
                     return;
                 }
 
@@ -608,6 +659,12 @@
 
                 submitTicketAjax();
             });
+
+            if (outlookButton) {
+                outlookButton.addEventListener('click', () => {
+                    showAuthLoading();
+                });
+            }
 
             cancelButton.addEventListener('click', closeModal);
 
