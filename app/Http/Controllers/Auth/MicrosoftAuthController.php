@@ -7,6 +7,7 @@ use App\Models\AllowedDomain;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Laravel\Socialite\Facades\Socialite;
 
@@ -26,6 +27,9 @@ class MicrosoftAuthController extends Controller
         try {
             $microsoftUser = Socialite::driver('microsoft')->user();
         } catch (\Throwable $exception) {
+            Log::warning('Microsoft OAuth callback failed', [
+                'error' => $exception->getMessage(),
+            ]);
             return redirect()->route('login')->withErrors([
                 'email' => 'No se pudo iniciar sesión con Outlook.',
             ]);
@@ -36,12 +40,18 @@ class MicrosoftAuthController extends Controller
             ?? ($microsoftUser->user['userPrincipalName'] ?? null);
 
         if (! $email) {
+            Log::warning('Microsoft OAuth callback without email', [
+                'payload' => $microsoftUser->user ?? null,
+            ]);
             return redirect()->route('login')->withErrors([
                 'email' => 'No se pudo obtener el correo desde Outlook.',
             ]);
         }
 
         if (! AllowedDomain::allowsEmail($email)) {
+            Log::warning('Microsoft OAuth blocked by domain policy', [
+                'email' => $email,
+            ]);
             return redirect()->route('login')->withErrors([
                 'email' => 'Dominio no permitido.',
             ]);
@@ -66,6 +76,10 @@ class MicrosoftAuthController extends Controller
         }
 
         if (! $user->isActive()) {
+            Log::warning('Microsoft OAuth login for inactive user', [
+                'email' => $email,
+                'user_id' => $user->id,
+            ]);
             return redirect()->route('login')->withErrors([
                 'email' => 'Usuario desactivado.',
             ]);

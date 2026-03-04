@@ -7,6 +7,7 @@ use App\Http\Controllers\PrinterController;
 use App\Http\Controllers\AdminTicketController;
 use App\Http\Controllers\AdminCalendarController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\AdminErrorLogController;
 use App\Http\Controllers\AllowedDomainController;
 use App\Http\Controllers\TicketController;
 use Illuminate\Support\Facades\Route;
@@ -112,6 +113,13 @@ Route::middleware(['auth', 'active.user', 'force.password', 'admin'])
             ->name('admin.tickets.actions');
         Route::post('/{ticket}/classification', [AdminTicketController::class, 'updateClassification'])
             ->name('admin.tickets.classification');
+    });
+
+Route::middleware(['auth', 'active.user', 'force.password', 'admin'])
+    ->prefix('admin/logs')
+    ->group(function () {
+        Route::get('/', [AdminErrorLogController::class, 'index'])
+            ->name('admin.logs.index');
     });
 
 Route::middleware(['auth', 'active.user', 'force.password', 'admin'])

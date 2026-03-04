@@ -109,7 +109,12 @@
                 </div>
 
                 <div class="flex-1 overflow-hidden">
-                    <div id="calendar" class="h-full"></div>
+                    <div id="calendar-wrapper" class="h-full">
+                        <div id="calendar-error" class="hidden text-center text-sm text-red-600 py-8 px-4">
+                            No se pudieron cargar los archivos del calendario. Ejecuta <span class="font-semibold">npm run build</span> en el servidor y recarga.
+                        </div>
+                        <div id="calendar" class="h-full"></div>
+                    </div>
                 </div>
                 <div class="mt-4 flex items-center gap-4 text-xs text-gray-500">
                     <div class="flex items-center gap-2">
@@ -201,6 +206,34 @@
         <script>
             document.addEventListener('DOMContentLoaded', () => {
                 const calendarEl = document.getElementById('calendar');
+                const calendarWrapper = document.getElementById('calendar-wrapper');
+                const calendarError = document.getElementById('calendar-error');
+                const showCalendarError = (message) => {
+                    if (calendarError) {
+                        calendarError.innerHTML = message;
+                        calendarError.classList.remove('hidden');
+                    }
+                    if (calendarEl) {
+                        calendarEl.classList.add('hidden');
+                    }
+                    if (calendarWrapper) {
+                        calendarWrapper.classList.add('flex', 'items-center', 'justify-center');
+                    }
+                };
+
+                if (!calendarEl) {
+                    return;
+                }
+
+                if (!window.FullCalendar || !window.FullCalendar.Calendar) {
+                    showCalendarError('No se pudieron cargar los archivos del calendario. Ejecuta <span class="font-semibold">npm run build</span> en el servidor y recarga.');
+                    return;
+                }
+
+                if (!window.FullCalendar.DayGrid?.default || !window.FullCalendar.TimeGrid?.default || !window.FullCalendar.Interaction?.default) {
+                    showCalendarError('Faltan módulos del calendario. Revisa que <span class="font-semibold">core.min.js</span>, <span class="font-semibold">daygrid.min.js</span>, <span class="font-semibold">timegrid.min.js</span> e <span class="font-semibold">interaction.min.js</span> existan en <span class="font-semibold">public/vendor/fullcalendar</span>.');
+                    return;
+                }
                 const modal = document.getElementById('schedule-modal');
                 const closeBtn = document.getElementById('schedule-close');
                 const cancelBtn = document.getElementById('schedule-cancel');
@@ -344,9 +377,9 @@
                     initialView: 'timeGridWeek',
                     locale: window.FullCalendarLocaleEs || 'es',
                     plugins: [
-                        window.FullCalendar.DayGrid,
-                        window.FullCalendar.TimeGrid,
-                        window.FullCalendar.Interaction,
+                        window.FullCalendar.DayGrid.default,
+                        window.FullCalendar.TimeGrid.default,
+                        window.FullCalendar.Interaction.default,
                     ],
                     height: '100%',
                     nowIndicator: true,
