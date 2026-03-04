@@ -9,8 +9,11 @@ use App\Models\TicketPart;
 use App\Models\TicketResolution;
 use App\Models\TicketStatusEvent;
 use App\Models\User;
+use App\Mail\TicketAssigned;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 class AdminTicketController extends Controller
 {
@@ -215,6 +218,27 @@ class AdminTicketController extends Controller
         ]);
 
         $this->changeStatus($ticket, 'asignado', null);
+
+        $ticket->loadMissing('locacion.padre', 'currentAssignment.technician');
+        $this->sendAssignmentNotification($ticket);
+    }
+
+    protected function sendAssignmentNotification(Ticket $ticket): void
+    {
+        $technician = $ticket->currentAssignment?->technician;
+        if (! $technician) {
+            return;
+        }
+
+        try {
+            Mail::to('informatica@mdonihue.cl')
+                ->send(new TicketAssigned($ticket, $technician));
+        } catch (\Throwable $exception) {
+            Log::warning('No se pudo enviar correo de asignación de ticket', [
+                'ticket_id' => $ticket->id,
+                'error' => $exception->getMessage(),
+            ]);
+        }
     }
 
     protected function canManageTicket(Ticket $ticket): bool

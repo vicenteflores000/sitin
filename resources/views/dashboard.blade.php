@@ -59,34 +59,7 @@
                     </div>
                 </div>
 
-                {{-- Estado GLPI --}}
-                @php
-                $glpiChip = match($glpiStatus ?? 'offline') {
-                'online' => [
-                'text' => 'GLPI conectado',
-                'classes' => 'border-[#6B8E23] text-[#6B8E23] bg-[#F4F7EE]',
-                ],
-                'error' => [
-                'text' => 'Error GLPI',
-                'classes' => 'border-red-300 text-red-700 bg-red-50',
-                ],
-                default => [
-                'text' => 'Modo offline',
-                'classes' => 'border-gray-300 text-gray-600 bg-gray-100',
-                ],
-                };
-                @endphp
-
-                <div class="flex items-center gap-2 px-3 py-1.5 rounded-full border text-sm {{ $glpiChip['classes'] }}">
-                    <span class="w-2 h-2 rounded-full
-                        {{ $glpiStatus === 'online'
-                            ? 'bg-[#6B8E23]'
-                            : ($glpiStatus === 'error' ? 'bg-red-500' : 'bg-gray-400')
-                        }}">
-                    </span>
-
-                    {{ $glpiChip['text'] }}
-                </div>
+                {{-- Estado GLPI oculto --}}
 
             </div>
 

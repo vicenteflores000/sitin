@@ -402,7 +402,7 @@
                         center: 'title',
                         right: 'dayGridMonth,timeGridWeek,timeGridDay',
                     },
-                    events: '{{ route('admin.calendar.events') }}',
+                    events: "{{ route('admin.calendar.events') }}",
                     select: (info) => {
                         const start = info.startStr.slice(0, 16);
                         const end = info.endStr.slice(0, 16);
@@ -527,7 +527,7 @@
                         modality: modalitySelect.value || 'remota',
                     };
 
-                    const response = await fetch('{{ route('admin.calendar.store') }}', {
+                    const response = await fetch("{{ route('admin.calendar.store') }}", {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
