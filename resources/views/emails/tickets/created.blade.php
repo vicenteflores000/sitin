@@ -11,12 +11,12 @@
                 <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="max-width:600px; background:#ffffff; border:1px solid #e5e7eb; border-radius:12px; padding:24px;">
                     <tr>
                         <td style="text-align:center; padding-bottom:12px;">
-                            <img src="{{ $logoUrl ?? asset('images/logo.png') }}" alt="Logo Tickets TI" style="height:40px; width:auto; display:block; margin:0 auto;">
+                            <img src="{{ $logoUrl ?? asset('images/logo.png') }}" alt="Logo SITIN" style="height:40px; width:auto; display:block; margin:0 auto;">
                         </td>
                     </tr>
                     <tr>
                         <td style="text-align:center; padding-bottom:12px;">
-                            <div style="font-size:18px; font-weight:600; color:#111827;">Soporte TI</div>
+                            <div style="font-size:18px; font-weight:600; color:#111827;">Notificación SITIN</div>
                             <div style="font-size:12px; color:#6b7280;">Nuevo ticket registrado</div>
                         </td>
                     </tr>
