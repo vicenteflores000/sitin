@@ -4,7 +4,7 @@
 
             <div class="mb-6 text-center">
                 <img src="{{ asset('images/logo.png') }}" alt="Logo Tickets TI" class="mx-auto h-12" style="width: 200px; height: auto;">
-                <p class="text-gray-600">Registro de errores del sistema.</p>
+                <p class="text-gray-600">Log general del sistema (errores + cambios).</p>
             </div>
 
             <div class="bg-white rounded-xl shadow-xl border border-gray-200 p-6 flex flex-col"
@@ -38,21 +38,36 @@
                 <div class="flex-1 overflow-y-auto space-y-3 pr-2">
                     @forelse($entries as $entry)
                         <div class="rounded-lg border border-gray-200 bg-gray-50 p-3 text-sm text-gray-700">
-                            <div class="flex items-center justify-between">
+                            <div class="flex items-center justify-between gap-3">
                                 <div class="text-xs text-gray-500">
                                     {{ $entry['date'] }} {{ $entry['time'] }}
                                 </div>
-                                <div class="text-xs font-semibold text-gray-600 uppercase">
-                                    {{ $entry['level'] }}
+                                <div class="flex items-center gap-2">
+                                    <span class="text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full
+                                        {{ ($entry['tag'] ?? '') === 'ERROR' ? 'bg-red-100 text-red-700' : '' }}
+                                        {{ ($entry['tag'] ?? '') === 'ALERTA' ? 'bg-orange-100 text-orange-700' : '' }}
+                                        {{ ($entry['tag'] ?? '') === 'OUTPUT' ? 'bg-emerald-100 text-emerald-700' : '' }}
+                                        {{ ($entry['tag'] ?? '') === 'INPUT' ? 'bg-blue-100 text-blue-700' : '' }}
+                                    ">
+                                        {{ $entry['tag'] ?? '—' }}
+                                    </span>
+                                    <span class="text-xs font-semibold text-gray-600 uppercase">
+                                        {{ $entry['level'] }}
+                                    </span>
                                 </div>
                             </div>
                             <div class="mt-2 text-sm text-gray-700">
                                 {{ $entry['message'] }}
                             </div>
+                            @if(!empty($entry['user']))
+                                <div class="mt-1 text-xs text-gray-500">
+                                    Por: {{ $entry['user'] }}
+                                </div>
+                            @endif
                         </div>
                     @empty
                         <div class="text-center text-gray-500 py-6">
-                            No hay errores para el rango seleccionado.
+                            No hay registros para el rango seleccionado.
                         </div>
                     @endforelse
                 </div>

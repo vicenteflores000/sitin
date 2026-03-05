@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use App\Models\AuditLog;
 
 class AdminErrorLogController extends Controller
 {
@@ -52,11 +53,50 @@ class AdminErrorLogController extends Controller
                     'time' => $lineTime,
                     'level' => $level,
                     'message' => $message,
+                    'type' => 'error',
+                    'tag' => 'ERROR',
                 ];
             }
         }
 
-        $entries = array_slice(array_reverse($entries), 0, 200);
+        $auditQuery = AuditLog::query();
+
+        if ($date) {
+            $auditQuery->whereDate('created_at', $date);
+        }
+
+        if ($from) {
+            $auditQuery->whereTime('created_at', '>=', $from);
+        }
+
+        if ($to) {
+            $auditQuery->whereTime('created_at', '<=', $to);
+        }
+
+        $auditEntries = $auditQuery
+            ->orderByDesc('created_at')
+            ->limit(200)
+            ->get();
+
+        foreach ($auditEntries as $audit) {
+            $entries[] = [
+                'date' => $audit->created_at?->format('Y-m-d') ?? '',
+                'time' => $audit->created_at?->format('H:i:s') ?? '',
+                'level' => 'CAMBIO',
+                'message' => $audit->description,
+                'type' => 'audit',
+                'user' => $audit->user_name ?? $audit->user_email,
+                'tag' => $audit->tag ?? 'INPUT',
+            ];
+        }
+
+        usort($entries, function ($a, $b) {
+            $aKey = ($a['date'] ?? '') . ' ' . ($a['time'] ?? '');
+            $bKey = ($b['date'] ?? '') . ' ' . ($b['time'] ?? '');
+            return strcmp($bKey, $aKey);
+        });
+
+        $entries = array_slice($entries, 0, 200);
 
         return view('admin.logs.index', [
             'entries' => $entries,
