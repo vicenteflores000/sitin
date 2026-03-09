@@ -34,4 +34,37 @@ class LocacionController extends Controller
 
         return redirect()->back()->with('success', 'Locación creada correctamente');
     }
+
+    public function edit(Locacion $locacion)
+    {
+        return view('admin.locaciones.edit', compact('locacion'));
+    }
+
+    public function update(Request $request, Locacion $locacion)
+    {
+        $request->validate([
+            'nombre' => 'required|string|max:255',
+            'slug' => 'required|string|max:255',
+            'locacion_padre_id' => 'nullable|exists:locaciones,id',
+        ]);
+
+        $locacion->update([
+            'nombre' => $request->nombre,
+            'slug' => $request->slug,
+            'locacion_padre_id' => $request->input('locacion_padre_id') ?: null,
+        ]);
+
+        return redirect()->back()->with('success', 'Locación actualizada correctamente');
+    }
+
+    public function destroy(Locacion $locacion)
+    {
+        if ($locacion->hijos()->exists()) {
+            return redirect()->back()->withErrors(['locacion' => 'No puedes eliminar un establecimiento con locaciones hijas.']);
+        }
+
+        $locacion->delete();
+
+        return redirect()->back()->with('success', 'Locación eliminada correctamente');
+    }
 }

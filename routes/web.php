@@ -74,14 +74,13 @@ Route::middleware(['auth', 'active.user', 'force.password', 'admin'])
         Route::post('/', [LocacionController::class, 'store'])
             ->name('admin.locaciones.store');
 
-        Route::get('/{user}/edit', [LocacionController::class, 'edit'])
+        Route::get('/{locacion}/edit', [LocacionController::class, 'edit'])
             ->name('admin.locaciones.edit');
 
-        Route::put('/{user}', [LocacionController::class, 'update'])
+        Route::put('/{locacion}', [LocacionController::class, 'update'])
             ->name('admin.locaciones.update');
-        Route::get('/locaciones', [LocacionController::class, 'edit'])->name('locacion.edit');
-        Route::patch('/locaciones', [LocacionController::class, 'update'])->name('locacion.update');
-        Route::delete('/locaciones', [LocacionController::class, 'destroy'])->name('locacion.destroy');
+        Route::delete('/{locacion}', [LocacionController::class, 'destroy'])
+            ->name('admin.locaciones.destroy');
     });
 
 Route::middleware(['auth', 'active.user', 'force.password', 'admin'])
