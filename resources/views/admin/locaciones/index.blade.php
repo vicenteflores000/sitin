@@ -11,8 +11,24 @@
                         'id' => $hijo->id,
                         'nombre' => $hijo->nombre,
                         'slug' => $hijo->slug,
+                        'funcionarios' => $hijo->funcionarios->map(function ($funcionario) {
+                            return [
+                                'id' => $funcionario->id,
+                                'name' => $funcionario->name,
+                                'email' => $funcionario->email,
+                            ];
+                        })->values(),
                     ];
                 })->values(),
+            ];
+        })->values();
+
+        $funcionariosPayload = $funcionarios->map(function ($funcionario) {
+            return [
+                'id' => $funcionario->id,
+                'name' => $funcionario->name,
+                'email' => $funcionario->email,
+                'locacion_id' => $funcionario->locacion_id,
             ];
         })->values();
     @endphp
@@ -26,17 +42,6 @@
             </div>
 
             <div class="bg-white rounded-xl shadow-xl border border-gray-200 p-6 flex flex-col flex-1 overflow-hidden">
-                @if(session('success'))
-                    <div class="mb-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
-                        {{ session('success') }}
-                    </div>
-                @endif
-                @if($errors->any())
-                    <div class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                        {{ $errors->first() }}
-                    </div>
-                @endif
-
                 <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
                     <form action="{{ route('dashboard') }}">
                         <button
@@ -211,6 +216,13 @@
                                         <p class="text-xs text-gray-500" x-text="hijo.slug"></p>
                                     </div>
                                     <div class="flex items-center gap-2">
+                                        <span class="text-[10px] px-2 py-0.5 rounded-full border border-gray-200 text-gray-500"
+                                            x-text="`${hijo.funcionarios?.length || 0} funcionarios`"></span>
+                                        <button type="button"
+                                            class="text-xs text-blue-600 hover:underline"
+                                            @click="openStaffManager(hijo)">
+                                            Gestionar
+                                        </button>
                                         <button type="button"
                                             class="text-xs text-[#6B8E23] hover:underline"
                                             @click="startEditChild(hijo)">
@@ -227,6 +239,58 @@
                                 </div>
                             </template>
                         </div>
+                    </div>
+
+                    <div x-show="staffTarget" x-transition class="mb-4 rounded-xl border border-gray-200 p-4">
+                        <p class="text-sm font-medium text-gray-700 mb-3">
+                            Funcionarios en <span class="font-semibold" x-text="staffTarget?.nombre"></span>
+                        </p>
+                        <div class="space-y-2 mb-3 max-h-32 overflow-y-auto pr-2">
+                            <template x-if="staffTarget && (staffTarget.funcionarios?.length || 0) === 0">
+                                <div class="text-sm text-gray-500">Sin funcionarios asignados.</div>
+                            </template>
+                            <template x-for="funcionario in (staffTarget?.funcionarios || [])" :key="funcionario.id">
+                                <div class="flex items-center justify-between rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm">
+                                    <div>
+                                        <p class="text-gray-700" x-text="funcionario.name"></p>
+                                        <p class="text-xs text-gray-500" x-text="funcionario.email"></p>
+                                    </div>
+                                    <form method="POST" :action="`/admin/locaciones/${staffTarget?.id}/funcionarios/${funcionario.id}`" @submit.prevent="removeStaff($event, funcionario)">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="text-xs text-red-600 hover:underline">
+                                            Quitar
+                                        </button>
+                                    </form>
+                                </div>
+                            </template>
+                        </div>
+
+                        <form method="POST" :action="`/admin/locaciones/${staffTarget?.id}/funcionarios`" class="space-y-3" @submit.prevent="assignStaff($event)">
+                            @csrf
+                            <select name="user_id" data-enhanced-select x-ref="staffSelect" class="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700"
+                                x-model="selectedStaffId" required>
+                                <option value="">Selecciona funcionario</option>
+                                <template x-for="funcionario in availableStaff()" :key="funcionario.id">
+                                    <option :value="funcionario.id" x-text="`${funcionario.name} (${funcionario.email})`"></option>
+                                </template>
+                            </select>
+                            <div class="flex items-center gap-2">
+                                <button type="submit"
+                                    class="rounded-lg border border-[#6B8E23] px-3 py-2 text-sm text-[#6B8E23] hover:bg-[#F4F7EE]"
+                                    :disabled="assigningStaff">
+                                    <span x-text="assigningStaff ? 'Asignando...' : 'Asignar'"></span>
+                                </button>
+                                <button type="button"
+                                    class="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                                    @click="staffTarget = null; selectedStaffId = ''">
+                                    Cancelar
+                                </button>
+                            </div>
+                            <div x-show="staffMessage" class="text-xs" :class="staffMessageType === 'error' ? 'text-red-600' : 'text-emerald-600'">
+                                <span x-text="staffMessage"></span>
+                            </div>
+                        </form>
                     </div>
 
                     <div x-show="editingChildId" x-transition class="mb-4 rounded-xl border border-gray-200 p-4">
@@ -302,11 +366,17 @@
                     editingChildId: null,
                     childEditName: '',
                     childEditSlug: '',
+                    staffTarget: null,
+                    selectedStaffId: '',
+                    assigningStaff: false,
+                    staffMessage: '',
+                    staffMessageType: 'success',
                     childName: '',
                     childSlug: '',
                     createParentName: '',
                     createParentSlug: '',
                     establishments: @json($establecimientosPayload),
+                    funcionarios: @json($funcionariosPayload),
                     slugify(value) {
                         return (value || '')
                             .toLowerCase()
@@ -335,6 +405,8 @@
                         this.editingChildId = null;
                         this.childEditName = '';
                         this.childEditSlug = '';
+                        this.staffTarget = null;
+                        this.selectedStaffId = '';
                         this.childName = '';
                         this.childSlug = '';
                         if (focusAdd) {
@@ -357,6 +429,119 @@
                         this.$nextTick(() => {
                             this.$refs.childName?.focus();
                         });
+                    },
+                    openStaffManager(hijo) {
+                        this.staffTarget = hijo;
+                        this.selectedStaffId = '';
+                        this.staffMessage = '';
+                        this.$nextTick(() => {
+                            this.refreshStaffSelect();
+                        });
+                    },
+                    availableStaff() {
+                        if (!this.staffTarget) return [];
+                        return this.funcionarios.filter((f) => f.locacion_id !== this.staffTarget.id);
+                    },
+                    refreshStaffSelect() {
+                        const el = this.$refs.staffSelect;
+                        if (!el || !window.$) return;
+                        const $el = window.$(el);
+                        if ($el.data('select2')) {
+                            $el.select2('destroy');
+                        }
+                        $el.select2({
+                            width: '100%',
+                            placeholder: 'Seleccione...',
+                            allowClear: true,
+                        });
+                        $el.off('change.sitin').on('change.sitin', () => {
+                            this.selectedStaffId = el.value;
+                        });
+                    },
+                    async assignStaff() {
+                        if (!this.staffTarget || !this.selectedStaffId || this.assigningStaff) return;
+                        this.assigningStaff = true;
+                        this.staffMessage = '';
+                        const url = `/admin/locaciones/${this.staffTarget.id}/funcionarios`;
+                        const body = new URLSearchParams();
+                        body.append('user_id', this.selectedStaffId);
+
+                        try {
+                            const response = await fetch(url, {
+                                method: 'POST',
+                                headers: {
+                                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                    'Accept': 'application/json',
+                                    'Content-Type': 'application/x-www-form-urlencoded',
+                                },
+                                body: body.toString(),
+                            });
+
+                            if (!response.ok) {
+                                const errorData = await response.json().catch(() => null);
+                                this.staffMessageType = 'error';
+                                this.staffMessage = errorData?.message || 'No se pudo asignar el funcionario.';
+                                return;
+                            }
+
+                            const data = await response.json();
+                            const assigned = data.user;
+                            if (assigned && this.staffTarget) {
+                                const func = this.funcionarios.find((f) => f.id === assigned.id);
+                                if (func) {
+                                    func.locacion_id = this.staffTarget.id;
+                                }
+                                this.staffTarget.funcionarios = this.staffTarget.funcionarios || [];
+                                const exists = this.staffTarget.funcionarios.find((f) => f.id === assigned.id);
+                                if (!exists) {
+                                    this.staffTarget.funcionarios.push({
+                                        id: assigned.id,
+                                        name: assigned.name,
+                                        email: assigned.email,
+                                    });
+                                }
+                                this.selectedStaffId = '';
+                                if (this.$refs.staffSelect && window.$) {
+                                    window.$(this.$refs.staffSelect).val('').trigger('change');
+                                    this.refreshStaffSelect();
+                                }
+                                this.staffMessageType = 'success';
+                                this.staffMessage = data.message || 'Funcionario asignado.';
+                            }
+                        } finally {
+                            this.assigningStaff = false;
+                        }
+                    },
+                    async removeStaff(event, funcionario) {
+                        if (!this.staffTarget || !funcionario) return;
+                        if (!confirm('¿Quitar funcionario de esta locación?')) return;
+
+                        const url = `/admin/locaciones/${this.staffTarget.id}/funcionarios/${funcionario.id}`;
+                        const response = await fetch(url, {
+                            method: 'DELETE',
+                            headers: {
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                'Accept': 'application/json',
+                            },
+                        });
+
+                        if (!response.ok) {
+                            const errorData = await response.json().catch(() => null);
+                            this.staffMessageType = 'error';
+                            this.staffMessage = errorData?.message || 'No se pudo quitar el funcionario.';
+                            return;
+                        }
+
+                        if (this.staffTarget) {
+                            this.staffTarget.funcionarios = (this.staffTarget.funcionarios || []).filter((f) => f.id !== funcionario.id);
+                        }
+                        const func = this.funcionarios.find((f) => f.id === funcionario.id);
+                        if (func) {
+                            func.locacion_id = null;
+                        }
+                        this.staffMessageType = 'success';
+                        this.staffMessage = 'Funcionario quitado.';
+                        this.refreshStaffSelect();
                     },
                     confirmDeleteChild(event) {
                         if (confirm('¿Eliminar esta locación hija?')) {

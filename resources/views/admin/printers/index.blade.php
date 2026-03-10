@@ -37,7 +37,22 @@
                 <div class="flex-1 overflow-y-auto" style="max-height: calc(570px - 2rem);">
                     <div class="space-y-6 pr-2">
                         <template x-if="loading">
-                            <div class="text-center text-gray-500 py-6">Cargando impresoras...</div>
+                            <div class="space-y-4 animate-pulse">
+                                <template x-for="n in [1,2,3,4]" :key="n">
+                                    <div class="border rounded-lg p-4 bg-gray-50">
+                                        <div class="flex items-center justify-between gap-4">
+                                            <div class="flex-1 space-y-2">
+                                                <div class="h-4 bg-gray-200 rounded w-2/3"></div>
+                                                <div class="h-3 bg-gray-200 rounded w-1/3"></div>
+                                            </div>
+                                            <div class="flex items-center gap-3">
+                                                <div class="h-6 w-20 bg-gray-200 rounded"></div>
+                                                <div class="h-3 w-3 bg-gray-200 rounded-full"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
                         </template>
 
                         <div x-show="!loading">

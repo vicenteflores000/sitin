@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use App\Models\User;
 
 class Locacion extends Model
 {
@@ -33,6 +34,12 @@ class Locacion extends Model
     public function hijos(): HasMany
     {
         return $this->hasMany(Locacion::class, 'locacion_padre_id');
+    }
+
+    /** Funcionarios vinculados */
+    public function funcionarios(): HasMany
+    {
+        return $this->hasMany(User::class, 'locacion_id');
     }
 
     /** Activos asignados */

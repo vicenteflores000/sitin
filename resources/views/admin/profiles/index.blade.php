@@ -35,13 +35,6 @@
                 </div>
 
 
-                {{-- Mensaje de éxito --}}
-                @if(session('success'))
-                <div class="mb-4 p-3 bg-green-100 text-green-700 rounded">
-                    {{ session('success') }}
-                </div>
-                @endif
-
                 {{-- Tabla de usuarios --}}
                 <div class="flex-1 overflow-y-auto" style="max-height: calc(380px - 5rem);">
                     <div class="space-y-3 pr-2">

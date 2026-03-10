@@ -46,51 +46,7 @@
                 <p class="text-gray-600">Solicitud de soporte TI</p>
             </div>
 
-            @if (session('success'))
-            <div
-                x-data="{ show: true }"
-                x-init="setTimeout(() => show = false, 4500)"
-                x-show="show"
-                x-transition:enter="transition ease-out duration-300"
-                x-transition:enter-start="opacity-0 translate-y-2"
-                x-transition:enter-end="opacity-100 translate-y-0"
-                x-transition:leave="transition ease-in duration-300"
-                x-transition:leave-start="opacity-100 translate-y-0"
-                x-transition:leave-end="opacity-0 translate-y-2"
-                class="fixed top-4 right-4 z-50 max-w-sm w-full sm:w-auto">
-                <div class="flex items-start gap-3 p-4 bg-green-100 border border-green-200 text-green-800 rounded-lg shadow-lg">
-                    <svg class="w-5 h-5 mt-0.5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M5 13l4 4L19 7" />
-                    </svg>
-                    <p class="text-sm">{{ session('success') }}</p>
-                    <button @click="show = false" class="ml-auto text-green-700 hover:text-green-900">✕</button>
-                </div>
-            </div>
-            @endif
-
-            <div id="toast-message" class="fixed top-4 right-4 z-[60] max-w-sm w-full sm:w-auto hidden">
-                <div id="toast-body" class="flex items-start gap-3 p-4 rounded-lg shadow-lg border">
-                    <svg id="toast-icon" class="w-5 h-5 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <p id="toast-text" class="text-sm"></p>
-                <button id="toast-close" class="ml-auto">✕</button>
-            </div>
-            </div>
-
             <div class="bg-white rounded-xl shadow-xl border border-gray-200 p-6 flex flex-col">
-
-                @if ($errors->any())
-                <div class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                    <ul class="list-disc pl-5 space-y-1">
-                        @foreach ($errors->all() as $error)
-                        <li>{{ $error }}</li>
-                        @endforeach
-                    </ul>
-                </div>
-                @endif
 
                 <form id="ticket-form" method="POST" action="/ticket">
                     @csrf
@@ -463,32 +419,9 @@
             });
 
             function showToast(message, type = 'error') {
-                const toast = document.getElementById('toast-message');
-                const body = document.getElementById('toast-body');
-                const text = document.getElementById('toast-text');
-                const icon = document.getElementById('toast-icon');
-                const close = document.getElementById('toast-close');
-
-                text.textContent = message;
-                body.className = 'flex items-start gap-3 p-4 rounded-lg shadow-lg border';
-                icon.className = 'w-5 h-5 mt-0.5';
-
-                if (type === 'success') {
-                    body.classList.add('bg-green-100', 'border-green-200', 'text-green-800');
-                    icon.classList.add('text-green-600');
-                    icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />';
-                } else {
-                    body.classList.add('bg-red-100', 'border-red-200', 'text-red-800');
-                    icon.classList.add('text-red-600');
-                    icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />';
+                if (window.showToast) {
+                    window.showToast(type, message);
                 }
-
-                toast.classList.remove('hidden');
-                close.onclick = () => toast.classList.add('hidden');
-
-                setTimeout(() => {
-                    toast.classList.add('hidden');
-                }, 3000);
             }
 
             async function authenticateOnly() {

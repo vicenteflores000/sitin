@@ -26,6 +26,7 @@ class User extends Authenticatable
         'glpi_user_id',
         'role',
         'active',
+        'locacion_id',
     ];
 
     /**
@@ -65,5 +66,10 @@ class User extends Authenticatable
     public function sendPasswordResetNotification($token): void
     {
         $this->notify(new ResetPasswordNotification($token));
+    }
+
+    public function locacion()
+    {
+        return $this->belongsTo(Locacion::class, 'locacion_id');
     }
 }

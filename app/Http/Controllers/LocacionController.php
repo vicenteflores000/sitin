@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Locacion;
+use App\Models\User;
 use Illuminate\Http\Request;
 
 class LocacionController extends Controller
@@ -10,11 +11,15 @@ class LocacionController extends Controller
     public function index()
     {
         $establecimientos = Locacion::raiz()
-            ->with('hijos')
+            ->with('hijos.funcionarios')
             ->orderBy('nombre')
             ->get();
 
-        return view('admin.locaciones.index', compact('establecimientos'));
+        $funcionarios = User::where('role', 'user')
+            ->orderBy('name')
+            ->get();
+
+        return view('admin.locaciones.index', compact('establecimientos', 'funcionarios'));
     }
 
     public function store(Request $request)
@@ -37,7 +42,7 @@ class LocacionController extends Controller
 
     public function edit(Locacion $locacion)
     {
-        return view('admin.locaciones.edit', compact('locacion'));
+        return redirect()->route('admin.locaciones.index');
     }
 
     public function update(Request $request, Locacion $locacion)
@@ -66,5 +71,61 @@ class LocacionController extends Controller
         $locacion->delete();
 
         return redirect()->back()->with('success', 'Locación eliminada correctamente');
+    }
+
+    public function assignFuncionario(Request $request, Locacion $locacion)
+    {
+        $request->validate([
+            'user_id' => 'required|exists:users,id',
+        ]);
+
+        $user = User::findOrFail($request->user_id);
+        if ($user->role !== 'user') {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'Solo funcionarios pueden ser asignados.'], 422);
+            }
+            return redirect()->back()->withErrors(['user_id' => 'Solo funcionarios pueden ser asignados.']);
+        }
+
+        $user->update([
+            'locacion_id' => $locacion->id,
+        ]);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => 'Funcionario asignado correctamente',
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'locacion_id' => $user->locacion_id,
+                ],
+            ]);
+        }
+
+        return redirect()->back()->with('success', 'Funcionario asignado correctamente');
+    }
+
+    public function removeFuncionario(Locacion $locacion, User $user)
+    {
+        if ($user->locacion_id !== $locacion->id) {
+            if (request()->expectsJson()) {
+                return response()->json(['message' => 'El funcionario no pertenece a esta locación.'], 422);
+            }
+            return redirect()->back()->withErrors(['user_id' => 'El funcionario no pertenece a esta locación.']);
+        }
+
+        $user->update([
+            'locacion_id' => null,
+        ]);
+
+        if (request()->expectsJson()) {
+            return response()->json([
+                'message' => 'Funcionario eliminado de la locación',
+                'user_id' => $user->id,
+            ]);
+        }
+
+        return redirect()->back()->with('success', 'Funcionario eliminado de la locación');
     }
 }
