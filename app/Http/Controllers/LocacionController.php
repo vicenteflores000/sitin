@@ -15,9 +15,7 @@ class LocacionController extends Controller
             ->orderBy('nombre')
             ->get();
 
-        $funcionarios = User::where('role', 'user')
-            ->orderBy('name')
-            ->get();
+        $funcionarios = User::orderBy('name')->get();
 
         return view('admin.locaciones.index', compact('establecimientos', 'funcionarios'));
     }
@@ -80,20 +78,13 @@ class LocacionController extends Controller
         ]);
 
         $user = User::findOrFail($request->user_id);
-        if ($user->role !== 'user') {
-            if ($request->expectsJson()) {
-                return response()->json(['message' => 'Solo funcionarios pueden ser asignados.'], 422);
-            }
-            return redirect()->back()->withErrors(['user_id' => 'Solo funcionarios pueden ser asignados.']);
-        }
-
         $user->update([
             'locacion_id' => $locacion->id,
         ]);
 
         if ($request->expectsJson()) {
             return response()->json([
-                'message' => 'Funcionario asignado correctamente',
+                'message' => 'Usuario asignado correctamente',
                 'user' => [
                     'id' => $user->id,
                     'name' => $user->name,
@@ -103,7 +94,7 @@ class LocacionController extends Controller
             ]);
         }
 
-        return redirect()->back()->with('success', 'Funcionario asignado correctamente');
+        return redirect()->back()->with('success', 'Usuario asignado correctamente');
     }
 
     public function removeFuncionario(Locacion $locacion, User $user)
@@ -121,11 +112,11 @@ class LocacionController extends Controller
 
         if (request()->expectsJson()) {
             return response()->json([
-                'message' => 'Funcionario eliminado de la locación',
+                'message' => 'Usuario eliminado de la locación',
                 'user_id' => $user->id,
             ]);
         }
 
-        return redirect()->back()->with('success', 'Funcionario eliminado de la locación');
+        return redirect()->back()->with('success', 'Usuario eliminado de la locación');
     }
 }

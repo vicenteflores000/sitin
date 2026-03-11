@@ -281,6 +281,8 @@
             let submittingInterval = null;
             const submittingFrames = ['Enviando', 'Enviando .', 'Enviando ..', 'Enviando ...', 'Enviando ..', 'Enviando .'];
             let submittingIndex = 0;
+            const draftKey = 'sitin_ticket_draft';
+            const submitAfterLoginKey = 'sitin_ticket_submit_after_login';
 
             function startSubmittingAnimation() {
                 if (!ticketSubmitText) {
@@ -319,6 +321,42 @@
                     }
                     stopSubmittingAnimation();
                 }
+            }
+
+            function saveDraft() {
+                if (!ticketForm) return;
+                const data = {};
+                const formData = new FormData(ticketForm);
+                formData.forEach((value, key) => {
+                    if (key === '_token' || key.startsWith('auth_')) return;
+                    data[key] = value;
+                });
+                localStorage.setItem(draftKey, JSON.stringify(data));
+            }
+
+            function restoreDraft() {
+                const raw = localStorage.getItem(draftKey);
+                if (!raw || !ticketForm) return;
+                let data = {};
+                try {
+                    data = JSON.parse(raw);
+                } catch {
+                    return;
+                }
+                Object.entries(data).forEach(([key, value]) => {
+                    const field = ticketForm.querySelector(`[name="${key}"]`);
+                    if (!field) return;
+                    field.value = value;
+                    field.dispatchEvent(new Event('change', { bubbles: true }));
+                });
+                if (data.impacto) {
+                    setImpacto(data.impacto);
+                }
+            }
+
+            function clearDraft() {
+                localStorage.removeItem(draftKey);
+                localStorage.removeItem(submitAfterLoginKey);
             }
 
             function openModal(context = 'ticket', redirectUrl = null) {
@@ -415,6 +453,8 @@
                     return;
                 }
                 event.preventDefault();
+                saveDraft();
+                localStorage.setItem(submitAfterLoginKey, '1');
                 openModal('ticket');
             });
 
@@ -503,6 +543,7 @@
                     }
 
                     const payload = await response.json();
+                    clearDraft();
                     ticketForm.reset();
                     authPasswordHidden.value = '';
                     setImpacto('');
@@ -595,6 +636,10 @@
 
             if (outlookButton) {
                 outlookButton.addEventListener('click', () => {
+                    if (authContext === 'ticket') {
+                        saveDraft();
+                        localStorage.setItem(submitAfterLoginKey, '1');
+                    }
                     showAuthLoading();
                 });
             }
@@ -622,6 +667,12 @@
                     event.preventDefault();
                 }
             });
+
+            restoreDraft();
+            if (sessionActive && localStorage.getItem(submitAfterLoginKey) === '1') {
+                localStorage.removeItem(submitAfterLoginKey);
+                submitTicketAjax();
+            }
 
             @if ($errors->has('auth_email') || $errors->has('auth_password'))
                 openModal();

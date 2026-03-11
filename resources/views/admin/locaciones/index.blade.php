@@ -217,7 +217,7 @@
                                     </div>
                                     <div class="flex items-center gap-2">
                                         <span class="text-[10px] px-2 py-0.5 rounded-full border border-gray-200 text-gray-500"
-                                            x-text="`${hijo.funcionarios?.length || 0} funcionarios`"></span>
+                                            x-text="`${hijo.funcionarios?.length || 0} usuarios`"></span>
                                         <button type="button"
                                             class="text-xs text-blue-600 hover:underline"
                                             @click="openStaffManager(hijo)">
@@ -243,11 +243,11 @@
 
                     <div x-show="staffTarget" x-transition class="mb-4 rounded-xl border border-gray-200 p-4">
                         <p class="text-sm font-medium text-gray-700 mb-3">
-                            Funcionarios en <span class="font-semibold" x-text="staffTarget?.nombre"></span>
+                            Usuarios en <span class="font-semibold" x-text="staffTarget?.nombre"></span>
                         </p>
                         <div class="space-y-2 mb-3 max-h-32 overflow-y-auto pr-2">
                             <template x-if="staffTarget && (staffTarget.funcionarios?.length || 0) === 0">
-                                <div class="text-sm text-gray-500">Sin funcionarios asignados.</div>
+                                <div class="text-sm text-gray-500">Sin usuarios asignados.</div>
                             </template>
                             <template x-for="funcionario in (staffTarget?.funcionarios || [])" :key="funcionario.id">
                                 <div class="flex items-center justify-between rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm">
@@ -270,7 +270,7 @@
                             @csrf
                             <select name="user_id" data-enhanced-select x-ref="staffSelect" class="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700"
                                 x-model="selectedStaffId" required>
-                                <option value="">Selecciona funcionario</option>
+                                <option value="">Selecciona usuario</option>
                                 <template x-for="funcionario in availableStaff()" :key="funcionario.id">
                                     <option :value="funcionario.id" x-text="`${funcionario.name} (${funcionario.email})`"></option>
                                 </template>
@@ -506,7 +506,7 @@
                                     this.refreshStaffSelect();
                                 }
                                 this.staffMessageType = 'success';
-                                this.staffMessage = data.message || 'Funcionario asignado.';
+                                this.staffMessage = data.message || 'Usuario asignado.';
                             }
                         } finally {
                             this.assigningStaff = false;
@@ -514,7 +514,7 @@
                     },
                     async removeStaff(event, funcionario) {
                         if (!this.staffTarget || !funcionario) return;
-                        if (!confirm('¿Quitar funcionario de esta locación?')) return;
+                        if (!confirm('¿Quitar usuario de esta locación?')) return;
 
                         const url = `/admin/locaciones/${this.staffTarget.id}/funcionarios/${funcionario.id}`;
                         const response = await fetch(url, {
@@ -540,7 +540,7 @@
                             func.locacion_id = null;
                         }
                         this.staffMessageType = 'success';
-                        this.staffMessage = 'Funcionario quitado.';
+                        this.staffMessage = 'Usuario quitado.';
                         this.refreshStaffSelect();
                     },
                     confirmDeleteChild(event) {
