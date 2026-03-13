@@ -76,19 +76,19 @@
                             </select>
                         </div>
 
+                        @php
+                            $selectedLoc = $locaciones->firstWhere('id', old('locacion_id'));
+                            $selectedLocLabel = $selectedLoc
+                                ? (($selectedLoc->padre?->nombre ? $selectedLoc->padre->nombre . ' - ' : '') . $selectedLoc->nombre)
+                                : 'Seleccione una locación';
+                        @endphp
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Ubicación</label>
-                            <select name="locacion_id" id="locacion_select" data-enhanced-select required
-                                class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                <option value="">Seleccione...</option>
-                                @foreach ($locaciones as $locacion)
-                                <option value="{{ $locacion->id }}"
-                                    data-label="{{ $locacion->padre ? $locacion->padre->nombre . ' - ' : '' }}{{ $locacion->nombre }}"
-                                    @selected(old('locacion_id') == $locacion->id)>
-                                    {{ $locacion->padre ? $locacion->padre->nombre . ' - ' : '' }}{{ $locacion->nombre }}
-                                </option>
-                                @endforeach
-                            </select>
+                            <input type="hidden" name="locacion_id" id="locacion_select" value="{{ old('locacion_id') }}" required>
+                            <button type="button" id="locacion-picker"
+                                class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-left text-gray-700 hover:bg-gray-50">
+                                <span id="locacion-label">{{ $selectedLocLabel }}</span>
+                            </button>
                         </div>
 
                         <div>
@@ -247,6 +247,55 @@
         </div>
     </div>
 
+    @php
+        $locacionesGrouped = $locaciones->groupBy(fn($loc) => $loc->padre?->id ?? 'sin');
+    @endphp
+    <div id="locacion-modal" class="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 hidden" aria-hidden="true">
+        <div class="bg-white rounded-xl shadow-lg w-full max-w-2xl p-6" role="dialog" aria-modal="true" aria-labelledby="locacion-title">
+            <div class="flex items-center justify-between mb-4">
+                <h2 id="locacion-title" class="text-lg font-semibold">Selecciona una locación</h2>
+                <button type="button" id="locacion-close" class="text-gray-500 hover:text-gray-700">✕</button>
+            </div>
+
+            <div class="mb-4">
+                <input type="text" id="locacion-search" placeholder="Buscar locación o establecimiento..."
+                    class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+
+            <div class="max-h-[50vh] overflow-y-auto pr-2 space-y-3" id="locacion-list">
+                @foreach ($locacionesGrouped as $group)
+                    @php
+                        $padre = $group->first()?->padre;
+                        $parentId = $padre?->id ?? 'sin';
+                        $parentName = $padre?->nombre ?? 'Sin establecimiento';
+                    @endphp
+                    <div class="border border-gray-200 rounded-lg bg-gray-50 locacion-group" data-parent-name="{{ strtolower($parentName) }}">
+                        <button type="button"
+                            class="w-full flex items-center justify-between px-4 py-3 text-left text-sm font-medium text-gray-700 locacion-parent-toggle"
+                            data-target="locacion-group-{{ $parentId }}">
+                            <span>{{ $parentName }}</span>
+                            <span class="text-xs text-gray-500">{{ $group->count() }} locaciones</span>
+                        </button>
+                        <div id="locacion-group-{{ $parentId }}" class="px-4 pb-3 space-y-2 hidden locacion-children">
+                            @foreach ($group as $locacion)
+                                @php
+                                    $label = ($locacion->padre?->nombre ? $locacion->padre->nombre . ' - ' : '') . $locacion->nombre;
+                                @endphp
+                                <button type="button"
+                                    class="w-full text-left text-sm text-gray-700 hover:text-[#6B8E23] locacion-child"
+                                    data-id="{{ $locacion->id }}"
+                                    data-label="{{ $label }}"
+                                    data-child-name="{{ strtolower($locacion->nombre) }}">
+                                    {{ $locacion->nombre }}
+                                </button>
+                            @endforeach
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    </div>
+
     <div id="auth-loading" class="fixed inset-0 hidden items-center justify-center bg-black/80 backdrop-blur-sm z-50">
         <div class="text-center text-white">
             <div class="flex items-center justify-center gap-2 mb-4">
@@ -272,6 +321,16 @@
             const authLoading = document.getElementById('auth-loading');
             const ticketSubmit = document.getElementById('ticket-submit');
             const ticketSubmitText = document.getElementById('ticket-submit-text');
+            const locacionSelect = document.getElementById('locacion_select');
+            const locacionPicker = document.getElementById('locacion-picker');
+            const locacionLabel = document.getElementById('locacion-label');
+            const locacionModal = document.getElementById('locacion-modal');
+            const locacionClose = document.getElementById('locacion-close');
+            const locacionSearch = document.getElementById('locacion-search');
+            const locacionList = document.getElementById('locacion-list');
+            const locacionGroups = document.querySelectorAll('.locacion-group');
+            const locacionChildren = document.querySelectorAll('.locacion-child');
+            const locacionToggles = document.querySelectorAll('.locacion-parent-toggle');
             let requiresAuth = {{ auth()->check() ? 'false' : 'true' }};
             let readyToSubmit = false;
             let authContext = 'ticket';
@@ -323,6 +382,98 @@
                 }
             }
 
+            function openLocacionModal() {
+                if (!locacionModal) return;
+                locacionModal.classList.remove('hidden');
+                locacionModal.setAttribute('aria-hidden', 'false');
+                if (locacionSearch) {
+                    locacionSearch.value = '';
+                    filterLocaciones('');
+                    locacionSearch.focus();
+                }
+            }
+
+            function closeLocacionModal() {
+                if (!locacionModal) return;
+                locacionModal.classList.add('hidden');
+                locacionModal.setAttribute('aria-hidden', 'true');
+            }
+
+            function filterLocaciones(query) {
+                const q = (query || '').toLowerCase().trim();
+                locacionGroups.forEach((group) => {
+                    const parentName = group.dataset.parentName || '';
+                    const children = group.querySelectorAll('.locacion-child');
+                    const body = group.querySelector('.locacion-children');
+                    let anyVisible = false;
+
+                    children.forEach((child) => {
+                        const childName = child.dataset.childName || '';
+                        if (q && parentName.includes(q)) {
+                            child.classList.remove('hidden');
+                            anyVisible = true;
+                            return;
+                        }
+                        const matches = !q || childName.includes(q);
+                        child.classList.toggle('hidden', !matches);
+                        if (matches) {
+                            anyVisible = true;
+                        }
+                    });
+
+                    if (q) {
+                        body.classList.remove('hidden');
+                    } else {
+                        body.classList.add('hidden');
+                    }
+
+                    group.classList.toggle('hidden', q ? !anyVisible : false);
+                });
+            }
+
+            if (locacionPicker) {
+                locacionPicker.addEventListener('click', openLocacionModal);
+            }
+            if (locacionClose) {
+                locacionClose.addEventListener('click', closeLocacionModal);
+            }
+            if (locacionModal) {
+                locacionModal.addEventListener('click', (event) => {
+                    if (event.target === locacionModal) {
+                        closeLocacionModal();
+                    }
+                });
+            }
+            if (locacionSearch) {
+                locacionSearch.addEventListener('input', (event) => {
+                    filterLocaciones(event.target.value);
+                });
+            }
+            locacionChildren.forEach((child) => {
+                child.addEventListener('click', () => {
+                    const id = child.dataset.id;
+                    const label = child.dataset.label;
+                    if (locacionSelect) {
+                        locacionSelect.value = id;
+                    }
+                    if (locacionLabel) {
+                        locacionLabel.textContent = label || 'Seleccione una locación';
+                    }
+                    closeLocacionModal();
+                });
+            });
+            locacionToggles.forEach((toggle) => {
+                toggle.addEventListener('click', () => {
+                    if (locacionSearch && locacionSearch.value.trim() !== '') {
+                        return;
+                    }
+                    const targetId = toggle.dataset.target;
+                    const body = targetId ? document.getElementById(targetId) : null;
+                    if (!body) return;
+                    body.classList.toggle('hidden');
+                });
+            });
+
             function saveDraft() {
                 if (!ticketForm) return;
                 const data = {};
@@ -348,6 +499,10 @@
                     if (!field) return;
                     field.value = value;
                     field.dispatchEvent(new Event('change', { bubbles: true }));
+                    if (key === 'locacion_id' && locacionLabel) {
+                        const match = document.querySelector(`.locacion-child[data-id="${value}"]`);
+                        locacionLabel.textContent = match?.dataset.label || 'Seleccione una locación';
+                    }
                 });
                 if (data.impacto) {
                     setImpacto(data.impacto);
@@ -445,6 +600,12 @@
             ticketForm.addEventListener('submit', (event) => {
                 if (isSubmitting) {
                     event.preventDefault();
+                    return;
+                }
+                if (locacionSelect && !locacionSelect.value) {
+                    event.preventDefault();
+                    showToast('Selecciona una locación.');
+                    openLocacionModal();
                     return;
                 }
                 if (!requiresAuth || readyToSubmit) {
@@ -547,9 +708,9 @@
                     ticketForm.reset();
                     authPasswordHidden.value = '';
                     setImpacto('');
-                    const locacionSelect = document.getElementById('locacion_select');
-                    if (window.$ && window.$.fn && window.$.fn.select2 && locacionSelect) {
-                        window.$(locacionSelect).val(null).trigger('change');
+                    if (locacionSelect && locacionLabel) {
+                        locacionSelect.value = '';
+                        locacionLabel.textContent = 'Seleccione una locación';
                     }
                     closeModal();
                     sessionActive = true;
