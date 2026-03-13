@@ -15,7 +15,7 @@ class LocacionController extends Controller
             ->orderBy('nombre')
             ->get();
 
-        $funcionarios = User::orderBy('name')->get();
+        $funcionarios = User::with('locaciones')->orderBy('name')->get();
 
         return view('admin.locaciones.index', compact('establecimientos', 'funcionarios'));
     }
@@ -78,9 +78,7 @@ class LocacionController extends Controller
         ]);
 
         $user = User::findOrFail($request->user_id);
-        $user->update([
-            'locacion_id' => $locacion->id,
-        ]);
+        $user->locaciones()->syncWithoutDetaching([$locacion->id]);
 
         if ($request->expectsJson()) {
             return response()->json([
@@ -89,7 +87,7 @@ class LocacionController extends Controller
                     'id' => $user->id,
                     'name' => $user->name,
                     'email' => $user->email,
-                    'locacion_id' => $user->locacion_id,
+                    'locacion_ids' => $user->locaciones()->pluck('locaciones.id')->all(),
                 ],
             ]);
         }
@@ -99,16 +97,14 @@ class LocacionController extends Controller
 
     public function removeFuncionario(Locacion $locacion, User $user)
     {
-        if ($user->locacion_id !== $locacion->id) {
+        if (! $user->locaciones()->where('locaciones.id', $locacion->id)->exists()) {
             if (request()->expectsJson()) {
                 return response()->json(['message' => 'El funcionario no pertenece a esta locación.'], 422);
             }
             return redirect()->back()->withErrors(['user_id' => 'El funcionario no pertenece a esta locación.']);
         }
 
-        $user->update([
-            'locacion_id' => null,
-        ]);
+        $user->locaciones()->detach($locacion->id);
 
         if (request()->expectsJson()) {
             return response()->json([

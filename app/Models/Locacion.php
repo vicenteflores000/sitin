@@ -36,10 +36,10 @@ class Locacion extends Model
         return $this->hasMany(Locacion::class, 'locacion_padre_id');
     }
 
-    /** Funcionarios vinculados */
-    public function funcionarios(): HasMany
+    /** Usuarios vinculados */
+    public function funcionarios()
     {
-        return $this->hasMany(User::class, 'locacion_id');
+        return $this->belongsToMany(User::class, 'locacion_user');
     }
 
     /** Activos asignados */

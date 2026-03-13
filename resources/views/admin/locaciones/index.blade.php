@@ -28,7 +28,7 @@
                 'id' => $funcionario->id,
                 'name' => $funcionario->name,
                 'email' => $funcionario->email,
-                'locacion_id' => $funcionario->locacion_id,
+                'locacion_ids' => $funcionario->locaciones->pluck('id')->values(),
             ];
         })->values();
     @endphp
@@ -122,19 +122,12 @@
                                     </button>
                                 </div>
 
-                                <div class="flex flex-wrap gap-2 text-xs text-gray-600">
+                                <div class="text-xs text-gray-500">
                                     <template x-if="est.hijos.length === 0">
-                                        <span class="px-2 py-1 rounded-full bg-white border border-dashed border-gray-300 text-gray-500">
-                                            Sin locaciones hijas
-                                        </span>
+                                        <span>Sin locaciones hijas</span>
                                     </template>
-                                    <template x-for="(hijo, idx) in est.hijos.slice(0, 3)" :key="hijo.id">
-                                        <span class="px-2 py-1 rounded-full bg-white border border-gray-200 text-gray-600" x-text="hijo.nombre"></span>
-                                    </template>
-                                    <template x-if="est.hijos.length > 3">
-                                        <span class="px-2 py-1 rounded-full bg-white border border-gray-200 text-gray-600">
-                                            <span x-text="`+${est.hijos.length - 3}`"></span>
-                                        </span>
+                                    <template x-if="est.hijos.length > 0">
+                                        <span x-text="`Locaciones hijas: ${est.hijos.length}`"></span>
                                     </template>
                                 </div>
                             </div>
@@ -201,9 +194,9 @@
                         </form>
                     </div>
 
-                    <div class="mb-4 rounded-lg border border-gray-200 bg-gray-50 p-4">
+                    <div class="flex-1 flex flex-col min-h-0 mb-4 rounded-lg border border-gray-200 bg-gray-50 p-4">
                         <p class="text-sm font-medium text-gray-700 mb-2">Locaciones hijas</p>
-                        <div class="space-y-2 max-h-52 overflow-y-auto pr-2">
+                        <div class="space-y-2 overflow-y-auto pr-2 flex-1">
                             <template x-if="selected && selected.hijos.length === 0">
                                 <div class="text-sm text-gray-500">
                                     Aún no hay locaciones hijas. Crea la primera desde abajo.
@@ -440,7 +433,10 @@
                     },
                     availableStaff() {
                         if (!this.staffTarget) return [];
-                        return this.funcionarios.filter((f) => f.locacion_id !== this.staffTarget.id);
+                        return this.funcionarios.filter((f) => {
+                            const ids = f.locacion_ids || [];
+                            return !ids.includes(this.staffTarget.id);
+                        });
                     },
                     refreshStaffSelect() {
                         const el = this.$refs.staffSelect;
@@ -489,7 +485,10 @@
                             if (assigned && this.staffTarget) {
                                 const func = this.funcionarios.find((f) => f.id === assigned.id);
                                 if (func) {
-                                    func.locacion_id = this.staffTarget.id;
+                                    func.locacion_ids = func.locacion_ids || [];
+                                    if (!func.locacion_ids.includes(this.staffTarget.id)) {
+                                        func.locacion_ids.push(this.staffTarget.id);
+                                    }
                                 }
                                 this.staffTarget.funcionarios = this.staffTarget.funcionarios || [];
                                 const exists = this.staffTarget.funcionarios.find((f) => f.id === assigned.id);
@@ -537,7 +536,7 @@
                         }
                         const func = this.funcionarios.find((f) => f.id === funcionario.id);
                         if (func) {
-                            func.locacion_id = null;
+                            func.locacion_ids = (func.locacion_ids || []).filter((id) => id !== this.staffTarget.id);
                         }
                         this.staffMessageType = 'success';
                         this.staffMessage = 'Usuario quitado.';

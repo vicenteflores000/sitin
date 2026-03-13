@@ -26,7 +26,6 @@ class User extends Authenticatable
         'glpi_user_id',
         'role',
         'active',
-        'locacion_id',
     ];
 
     /**
@@ -68,8 +67,8 @@ class User extends Authenticatable
         $this->notify(new ResetPasswordNotification($token));
     }
 
-    public function locacion()
+    public function locaciones()
     {
-        return $this->belongsTo(Locacion::class, 'locacion_id');
+        return $this->belongsToMany(Locacion::class, 'locacion_user');
     }
 }

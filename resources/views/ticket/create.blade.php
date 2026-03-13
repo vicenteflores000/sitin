@@ -249,6 +249,10 @@
 
     @php
         $locacionesGrouped = $locaciones->groupBy(fn($loc) => $loc->padre?->id ?? 'sin');
+        $suggestedLocaciones = collect();
+        if (auth()->check()) {
+            $suggestedLocaciones = auth()->user()->locaciones()->with('padre')->get();
+        }
     @endphp
     <div id="locacion-modal" class="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 hidden" aria-hidden="true">
         <div class="bg-white rounded-xl shadow-lg w-full max-w-2xl p-6" role="dialog" aria-modal="true" aria-labelledby="locacion-title">
@@ -261,6 +265,27 @@
                 <input type="text" id="locacion-search" placeholder="Buscar locación o establecimiento..."
                     class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
             </div>
+
+            @if ($suggestedLocaciones->count() > 0)
+                <div id="locacion-suggested" class="mb-4 rounded-lg border border-[#DCE7C5] bg-[#F4F7EE] p-4">
+                    <p class="text-xs uppercase tracking-wide text-gray-500 mb-2">Sugeridas</p>
+                    <div class="space-y-2">
+                        @foreach ($suggestedLocaciones as $locacion)
+                            @php
+                                $label = ($locacion->padre?->nombre ? $locacion->padre->nombre . ' - ' : '') . $locacion->nombre;
+                            @endphp
+                            <button type="button"
+                                class="w-full text-left text-sm text-gray-700 hover:text-[#6B8E23] locacion-child locacion-suggested"
+                                data-id="{{ $locacion->id }}"
+                                data-label="{{ $label }}"
+                                data-suggest-name="{{ strtolower($label) }}"
+                                data-child-name="{{ strtolower($locacion->nombre) }}">
+                                {{ $label }}
+                            </button>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
 
             <div class="max-h-[50vh] overflow-y-auto pr-2 space-y-3" id="locacion-list">
                 @foreach ($locacionesGrouped as $group)
@@ -330,6 +355,8 @@
             const locacionList = document.getElementById('locacion-list');
             const locacionGroups = document.querySelectorAll('.locacion-group');
             const locacionChildren = document.querySelectorAll('.locacion-child');
+            const locacionSuggested = document.querySelectorAll('.locacion-suggested');
+            const locacionSuggestedBox = document.getElementById('locacion-suggested');
             const locacionToggles = document.querySelectorAll('.locacion-parent-toggle');
             let requiresAuth = {{ auth()->check() ? 'false' : 'true' }};
             let readyToSubmit = false;
@@ -401,6 +428,20 @@
 
             function filterLocaciones(query) {
                 const q = (query || '').toLowerCase().trim();
+
+                if (locacionSuggestedBox) {
+                    let anySuggested = false;
+                    locacionSuggested.forEach((item) => {
+                        const label = item.dataset.suggestName || '';
+                        const visible = !q || label.includes(q);
+                        item.classList.toggle('hidden', !visible);
+                        if (visible) {
+                            anySuggested = true;
+                        }
+                    });
+                    locacionSuggestedBox.classList.toggle('hidden', q ? !anySuggested : false);
+                }
+
                 locacionGroups.forEach((group) => {
                     const parentName = group.dataset.parentName || '';
                     const children = group.querySelectorAll('.locacion-child');
