@@ -21,8 +21,7 @@ class TicketController extends Controller
 {
     public function create()
     {
-        $locaciones = Locacion::with('padre')
-            ->whereNotNull('locacion_padre_id')
+        $locaciones = Locacion::whereNull('locacion_padre_id')
             ->orderBy('nombre')
             ->get();
 
@@ -102,11 +101,12 @@ class TicketController extends Controller
         $ticket = Ticket::create([
             'tipo' => $request->tipo,
             'area' => $request->input('area') ?: 'No especificado',
-            'categoria' => $request->categoria,
+            'categoria' => $request->input('categoria') ?: 'Otro',
             'impacto' => $request->input('impacto') ?: 'No especificado',
             'descripcion' => trim($request->descripcion),
             'usuario_mail' => $user->email,
             'locacion_id' => $request->locacion_id,
+            'locacion_hija_texto' => trim($request->input('locacion_hija_texto') ?? ''),
             'glpi_location_id' => $request->input('glpi_location_id'),
             'estado_glpi' => null,
 

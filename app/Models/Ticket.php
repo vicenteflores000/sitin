@@ -34,6 +34,7 @@ class Ticket extends Model
         'payload_glpi',
         'glpi_location_id',
         'locacion_id',
+        'locacion_hija_texto',
         'estado_glpi',
         'categoria_interna',
         'problem_type',

@@ -51,8 +51,10 @@ class PriorityService
     protected function typeAdjustment(Ticket $ticket): int
     {
         return match ($ticket->tipo) {
-            'Mejora' => -3,
-            'Administrativo' => -1,
+            'Mejora',
+            'Necesito una mejora / cambio en algo...' => -3,
+            'Administrativo',
+            'Necesito ayuda para algo...' => -1,
             default => 0,
         };
     }

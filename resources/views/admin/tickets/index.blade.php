@@ -25,9 +25,10 @@
                         @forelse($tickets as $ticket)
                         @php
                             $status = $ticket->latestStatusEvent?->to_status ?? 'nuevo';
-                            $locacionLabel = $ticket->locacion?->padre?->nombre
-                                ? $ticket->locacion->padre->nombre . ' - ' . $ticket->locacion->nombre
-                                : ($ticket->locacion?->nombre ?? 'Sin ubicación');
+                            $locacionPadre = $ticket->locacion?->nombre ?? 'Sin ubicación';
+                            $locacionLabel = $ticket->locacion_hija_texto
+                                ? $locacionPadre . ' - ' . $ticket->locacion_hija_texto
+                                : $locacionPadre;
                         @endphp
                         @php
                             $hasAssignment = (bool) $ticket->currentAssignment;

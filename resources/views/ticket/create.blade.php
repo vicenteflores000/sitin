@@ -62,33 +62,22 @@
                         </div>
 
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
-                            <select name="categoria" required
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Establecimiento</label>
+                            <select name="locacion_id" id="locacion_select" required
                                 class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                                 <option value="">Seleccione...</option>
-                                <option value="Computador" @selected(old('categoria') === 'Computador')>Computador</option>
-                                <option value="Impresora" @selected(old('categoria') === 'Impresora')>Impresora</option>
-                                <option value="Internet" @selected(old('categoria') === 'Internet')>Internet</option>
-                                <option value="Sistema" @selected(old('categoria') === 'Sistema')>Sistema</option>
-                                <option value="Correo" @selected(old('categoria') === 'Correo')>Correo</option>
-                                <option value="Telefonia" @selected(old('categoria') === 'Telefonia')>Telefonía</option>
-                                <option value="Otro" @selected(old('categoria') === 'Otro')>Otro</option>
+                                @foreach ($locaciones as $locacion)
+                                    <option value="{{ $locacion->id }}" @selected(old('locacion_id') == $locacion->id)>
+                                        {{ $locacion->nombre }}
+                                    </option>
+                                @endforeach
                             </select>
                         </div>
-
-                        @php
-                            $selectedLoc = $locaciones->firstWhere('id', old('locacion_id'));
-                            $selectedLocLabel = $selectedLoc
-                                ? (($selectedLoc->padre?->nombre ? $selectedLoc->padre->nombre . ' - ' : '') . $selectedLoc->nombre)
-                                : 'Seleccione una locación';
-                        @endphp
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Ubicación</label>
-                            <input type="hidden" name="locacion_id" id="locacion_select" value="{{ old('locacion_id') }}" required>
-                            <button type="button" id="locacion-picker"
-                                class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-left text-gray-700 hover:bg-gray-50">
-                                <span id="locacion-label">{{ $selectedLocLabel }}</span>
-                            </button>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Ubicación (detalle)</label>
+                            <input type="text" name="locacion_hija_texto" value="{{ old('locacion_hija_texto') }}" required
+                                placeholder="Ej: Sala 3, Oficina dirección"
+                                class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                         </div>
 
                         <div>
@@ -96,9 +85,10 @@
                             <select name="tipo" required
                                 class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                                 <option value="">Seleccione...</option>
-                                <option value="Soporte" @selected(old('tipo') === 'Soporte')>Soporte</option>
-                                <option value="Administrativo" @selected(old('tipo') === 'Administrativo')>Administrativo</option>
-                                <option value="Mejora" @selected(old('tipo') === 'Mejora')>Mejora</option>
+                                <option value="Algo no funciona..." @selected(old('tipo') === 'Algo no funciona...')>Algo no funciona...</option>
+                                <option value="Necesito ayuda para algo..." @selected(old('tipo') === 'Necesito ayuda para algo...')>Necesito ayuda para algo...</option>
+                                <option value="No puedo acceder / entrar ..." @selected(old('tipo') === 'No puedo acceder / entrar ...')>No puedo acceder / entrar ...</option>
+                                <option value="Necesito una mejora / cambio en algo..." @selected(old('tipo') === 'Necesito una mejora / cambio en algo...')>Necesito una mejora / cambio en algo...</option>
                             </select>
                         </div>
 

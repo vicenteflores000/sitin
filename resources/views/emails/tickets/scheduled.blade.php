@@ -59,7 +59,7 @@
                                 <tr>
                                     <td style="padding: 6px 0; font-weight: bold;">Ubicación</td>
                                     <td style="padding: 6px 0;">
-                                        {{ $ticket->locacion?->padre?->nombre ? $ticket->locacion->padre->nombre . ' - ' : '' }}{{ $ticket->locacion?->nombre ?? 'No especificado' }}
+                                        {{ $ticket->locacion?->nombre ?? 'No especificado' }}@if($ticket->locacion_hija_texto) - {{ $ticket->locacion_hija_texto }}@endif
                                     </td>
                                 </tr>
                                 <tr>

@@ -126,9 +126,10 @@ class AdminCalendarController extends Controller
     protected function buildEvent(TicketSchedule $schedule): array
     {
         $ticket = $schedule->ticket;
-        $location = $ticket?->locacion?->padre?->nombre
-            ? $ticket->locacion->padre->nombre . ' - ' . $ticket->locacion->nombre
-            : ($ticket?->locacion?->nombre ?? 'Sin ubicación');
+        $location = $ticket?->locacion?->nombre ?? 'Sin ubicación';
+        if ($ticket?->locacion_hija_texto) {
+            $location .= ' - ' . $ticket->locacion_hija_texto;
+        }
         $synced = $schedule->outlook_status === 'synced';
         $className = $synced ? 'event-synced' : 'event-error';
 

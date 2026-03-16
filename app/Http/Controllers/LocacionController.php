@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Locacion;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class LocacionController extends Controller
 {
@@ -24,14 +25,24 @@ class LocacionController extends Controller
     {
         $request->validate([
             'nombre' => 'required|string|max:255',
-            'slug' => 'required|string|max:255',
+            'slug' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('locaciones', 'slug')->where(function ($query) use ($request) {
+                    $parentId = $request->input('locacion_padre_id');
+                    return $parentId
+                        ? $query->where('locacion_padre_id', $parentId)
+                        : $query->whereNull('locacion_padre_id');
+                }),
+            ],
             'locacion_padre_id' => 'nullable|exists:locaciones,id',
         ]);
 
         Locacion::create([
             'nombre' => $request->nombre,
             'slug' => $request->slug,
-            'locacion_padre_id' => $request->parent_id ?: null,
+            'locacion_padre_id' => $request->input('locacion_padre_id') ?: null,
             'activo' => true,
         ]);
 
@@ -47,7 +58,19 @@ class LocacionController extends Controller
     {
         $request->validate([
             'nombre' => 'required|string|max:255',
-            'slug' => 'required|string|max:255',
+            'slug' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('locaciones', 'slug')
+                    ->ignore($locacion->id)
+                    ->where(function ($query) use ($request) {
+                        $parentId = $request->input('locacion_padre_id');
+                        return $parentId
+                            ? $query->where('locacion_padre_id', $parentId)
+                            : $query->whereNull('locacion_padre_id');
+                    }),
+            ],
             'locacion_padre_id' => 'nullable|exists:locaciones,id',
         ]);
 
