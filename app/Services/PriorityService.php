@@ -26,7 +26,9 @@ class PriorityService
     protected function baseByImpact(string $impacto): int
     {
         return match ($impacto) {
+            'Impide trabajar',
             'Impide atender usuarios' => 5,
+            'Dificulta trabajar',
             'Dificulta el trabajo' => 3,
             default => 1,
         };

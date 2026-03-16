@@ -172,8 +172,10 @@ class GlpiService
     protected function mapImpact(string $impacto): int
     {
         return match ($impacto) {
+            'Impide trabajar',
             'Impide atender usuarios' => 5,
-            'Dificulta el trabajo'    => 3,
+            'Dificulta trabajar',
+            'Dificulta el trabajo' => 3,
             default                  => 1,
         };
     }

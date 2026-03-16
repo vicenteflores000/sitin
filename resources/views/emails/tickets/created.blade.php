@@ -50,7 +50,7 @@
                                     <td style="padding: 6px 0;">{{ $ticket->tipo }}</td>
                                 </tr>
                                 <tr>
-                                    <td style="padding: 6px 0; font-weight: bold;">Impacto</td>
+                                    <td style="padding: 6px 0; font-weight: bold;">Impacto laboral</td>
                                     <td style="padding: 6px 0;">{{ $ticket->impacto }}</td>
                                 </tr>
                             </table>

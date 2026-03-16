@@ -170,7 +170,7 @@
                                                             <div>{{ $ticket->tipo }}</div>
                                                         </div>
                                                         <div>
-                                                            <div class="text-xs text-gray-400">Impacto</div>
+                                                            <div class="text-xs text-gray-400">Impacto laboral</div>
                                                             <div>{{ $ticket->impacto }}</div>
                                                         </div>
                                                     </div>

@@ -93,20 +93,20 @@
                         </div>
 
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Impacto (opcional)</label>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Impacto laboral (opcional)</label>
                             <input type="hidden" name="impacto" id="impacto_input" value="{{ old('impacto') }}">
                             <div class="grid grid-cols-3 gap-2">
                                 <button type="button" data-impacto="No impide trabajar"
                                     class="impacto-btn rounded-lg border border-gray-300 px-3 py-2 text-xs text-gray-700 hover:bg-gray-50">
-                                    No impide
+                                    No impide trabajar
                                 </button>
-                                <button type="button" data-impacto="Dificulta el trabajo"
+                                <button type="button" data-impacto="Dificulta trabajar"
                                     class="impacto-btn rounded-lg border border-gray-300 px-3 py-2 text-xs text-gray-700 hover:bg-gray-50">
-                                    Dificulta
+                                    Dificulta trabajar
                                 </button>
-                                <button type="button" data-impacto="Impide atender usuarios"
+                                <button type="button" data-impacto="Impide trabajar"
                                     class="impacto-btn rounded-lg border border-gray-300 px-3 py-2 text-xs text-gray-700 hover:bg-gray-50">
-                                    Impide
+                                    Impide trabajar
                                 </button>
                             </div>
                         </div>
