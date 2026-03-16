@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use App\Models\User;
+use App\Models\AllowedDomain;
 
 class Locacion extends Model
 {
@@ -46,6 +47,11 @@ class Locacion extends Model
     public function activosAsignados(): MorphMany
     {
         return $this->morphMany(AsignacionActivo::class, 'asignable');
+    }
+
+    public function allowedDomains()
+    {
+        return $this->belongsToMany(AllowedDomain::class, 'allowed_domain_locacion')->withTimestamps();
     }
 
     public function scopeRaiz(Builder $query)

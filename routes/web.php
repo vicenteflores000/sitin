@@ -85,6 +85,8 @@ Route::middleware(['auth', 'active.user', 'force.password', 'admin'])
             ->name('admin.locaciones.funcionarios.assign');
         Route::delete('/{locacion}/funcionarios/{user}', [LocacionController::class, 'removeFuncionario'])
             ->name('admin.locaciones.funcionarios.remove');
+        Route::put('/{locacion}/domains', [LocacionController::class, 'updateDomains'])
+            ->name('admin.locaciones.domains.update');
     });
 
 Route::middleware(['auth', 'active.user', 'force.password', 'admin'])

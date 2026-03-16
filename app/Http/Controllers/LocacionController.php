@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Locacion;
 use App\Models\User;
+use App\Models\AllowedDomain;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -12,13 +13,15 @@ class LocacionController extends Controller
     public function index()
     {
         $establecimientos = Locacion::raiz()
-            ->with('hijos.funcionarios')
+            ->with('hijos.funcionarios', 'allowedDomains')
             ->orderBy('nombre')
             ->get();
 
         $funcionarios = User::with('locaciones')->orderBy('name')->get();
 
-        return view('admin.locaciones.index', compact('establecimientos', 'funcionarios'));
+        $domains = AllowedDomain::orderBy('domain')->get();
+
+        return view('admin.locaciones.index', compact('establecimientos', 'funcionarios', 'domains'));
     }
 
     public function store(Request $request)
@@ -137,5 +140,25 @@ class LocacionController extends Controller
         }
 
         return redirect()->back()->with('success', 'Usuario eliminado de la locación');
+    }
+
+    public function updateDomains(Request $request, Locacion $locacion)
+    {
+        if ($locacion->locacion_padre_id !== null) {
+            return response()->json(['message' => 'Solo puedes configurar dominios en establecimientos.'], 422);
+        }
+
+        $data = $request->validate([
+            'domain_ids' => 'array',
+            'domain_ids.*' => 'integer|exists:allowed_domains,id',
+        ]);
+
+        $domainIds = $data['domain_ids'] ?? [];
+        $locacion->allowedDomains()->sync($domainIds);
+
+        return response()->json([
+            'message' => 'Dominios actualizados.',
+            'domain_ids' => $domainIds,
+        ]);
     }
 }

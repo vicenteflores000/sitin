@@ -21,9 +21,20 @@ class TicketController extends Controller
 {
     public function create()
     {
-        $locaciones = Locacion::whereNull('locacion_padre_id')
-            ->orderBy('nombre')
-            ->get();
+        $locacionesQuery = Locacion::whereNull('locacion_padre_id')
+            ->orderBy('nombre');
+
+        if (auth()->check()) {
+            $email = auth()->user()?->email;
+            $domain = strtolower(trim(substr(strrchr($email ?? '', '@'), 1) ?: ''));
+            if ($domain !== '') {
+                $locacionesQuery->whereHas('allowedDomains', function ($domainQuery) use ($domain) {
+                    $domainQuery->where('domain', $domain);
+                });
+            }
+        }
+
+        $locaciones = $locacionesQuery->get();
 
         return view('ticket.create', compact('locaciones'));
     }

@@ -19,4 +19,9 @@ class AllowedDomain extends Model
 
         return static::where('domain', $domain)->exists();
     }
+
+    public function locaciones()
+    {
+        return $this->belongsToMany(Locacion::class, 'allowed_domain_locacion')->withTimestamps();
+    }
 }

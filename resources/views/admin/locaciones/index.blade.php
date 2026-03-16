@@ -1,4 +1,9 @@
 <x-layouts.clean>
+    <style>
+        [x-cloak] {
+            display: none !important;
+        }
+    </style>
     @php
         $establecimientosPayload = $establecimientos->map(function ($est) {
             return [
@@ -6,6 +11,7 @@
                 'nombre' => $est->nombre,
                 'slug' => $est->slug,
                 'updated_at' => optional($est->updated_at)->format('Y-m-d H:i'),
+                'allowed_domain_ids' => $est->allowedDomains->pluck('id')->values(),
                 'hijos' => $est->hijos->map(function ($hijo) {
                     return [
                         'id' => $hijo->id,
@@ -29,6 +35,13 @@
                 'name' => $funcionario->name,
                 'email' => $funcionario->email,
                 'locacion_ids' => $funcionario->locaciones->pluck('id')->values(),
+            ];
+        })->values();
+
+        $domainsPayload = $domains->map(function ($domain) {
+            return [
+                'id' => $domain->id,
+                'domain' => $domain->domain,
             ];
         })->values();
     @endphp
@@ -113,6 +126,12 @@
                                         class="rounded-lg border border-gray-300 px-3 py-2 text-xs text-gray-700 hover:bg-gray-50"
                                         @click="openDrawer(est)">
                                         Ver detalle
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class="rounded-lg border border-gray-300 px-3 py-2 text-xs text-gray-700 hover:bg-gray-50"
+                                        @click="openDomainModal(est)">
+                                        Dominios
                                     </button>
                                     <button
                                         type="button"
@@ -342,6 +361,49 @@
                 </div>
             </div>
 
+            <div x-show="domainModalOpen" x-cloak class="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50" x-transition>
+                <div class="bg-white rounded-xl shadow-xl w-full max-w-lg p-6" @click.away="closeDomainModal()">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <p class="text-xs uppercase tracking-wide text-gray-500">Dominios permitidos</p>
+                            <p class="text-lg font-semibold text-gray-800" x-text="domainTarget?.nombre"></p>
+                        </div>
+                        <button type="button" class="text-gray-500 hover:text-gray-700" @click="closeDomainModal()">✕</button>
+                    </div>
+
+                    <div class="space-y-2 max-h-64 overflow-y-auto pr-1">
+                        <template x-if="domains.length === 0">
+                            <div class="text-sm text-gray-500">No hay dominios registrados.</div>
+                        </template>
+                        <template x-for="domain in domains" :key="domain.id">
+                            <label class="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700 cursor-pointer">
+                                <span x-text="domain.domain"></span>
+                                <input type="checkbox"
+                                    class="h-4 w-4 accent-[#6B8E23]"
+                                    :value="domain.id"
+                                    x-model="selectedDomainIds">
+                            </label>
+                        </template>
+                    </div>
+
+                    <div class="mt-4 flex items-center gap-2">
+                        <button type="button"
+                            class="rounded-lg border border-[#6B8E23] px-4 py-2 text-sm text-[#6B8E23] hover:bg-[#F4F7EE]"
+                            :disabled="domainSaving"
+                            @click="saveDomains()">
+                            <span x-text="domainSaving ? 'Guardando...' : 'Guardar'"></span>
+                        </button>
+                        <button type="button"
+                            class="rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                            @click="closeDomainModal()">
+                            Cancelar
+                        </button>
+                        <div x-show="domainMessage" class="text-xs" :class="domainMessageType === 'error' ? 'text-red-600' : 'text-emerald-600'">
+                            <span x-text="domainMessage"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -364,12 +426,19 @@
                     assigningStaff: false,
                     staffMessage: '',
                     staffMessageType: 'success',
+                    domainModalOpen: false,
+                    domainTarget: null,
+                    selectedDomainIds: [],
+                    domainSaving: false,
+                    domainMessage: '',
+                    domainMessageType: 'success',
                     childName: '',
                     childSlug: '',
                     createParentName: '',
                     createParentSlug: '',
                     establishments: @json($establecimientosPayload),
                     funcionarios: @json($funcionariosPayload),
+                    domains: @json($domainsPayload),
                     slugify(value) {
                         return (value || '')
                             .toLowerCase()
@@ -406,6 +475,54 @@
                             this.$nextTick(() => {
                                 this.$refs.childName?.focus();
                             });
+                        }
+                    },
+                    openDomainModal(est) {
+                        this.domainTarget = est;
+                        this.selectedDomainIds = (est.allowed_domain_ids || []).map((id) => Number(id));
+                        this.domainMessage = '';
+                        this.domainModalOpen = true;
+                    },
+                    closeDomainModal() {
+                        this.domainModalOpen = false;
+                        this.domainTarget = null;
+                        this.selectedDomainIds = [];
+                        this.domainMessage = '';
+                    },
+                    async saveDomains() {
+                        if (!this.domainTarget || this.domainSaving) return;
+                        this.domainSaving = true;
+                        this.domainMessage = '';
+                        const url = `/admin/locaciones/${this.domainTarget.id}/domains`;
+
+                        try {
+                            const response = await fetch(url, {
+                                method: 'PUT',
+                                headers: {
+                                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                    'Accept': 'application/json',
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({
+                                    domain_ids: this.selectedDomainIds,
+                                }),
+                            });
+
+                            if (!response.ok) {
+                                const errorData = await response.json().catch(() => null);
+                                this.domainMessageType = 'error';
+                                this.domainMessage = errorData?.message || 'No se pudo guardar la configuración.';
+                                return;
+                            }
+
+                            const data = await response.json();
+                            if (this.domainTarget) {
+                                this.domainTarget.allowed_domain_ids = data.domain_ids || [];
+                            }
+                            this.domainMessageType = 'success';
+                            this.domainMessage = data.message || 'Dominios actualizados.';
+                        } finally {
+                            this.domainSaving = false;
                         }
                     },
                     toggleParentEdit() {
