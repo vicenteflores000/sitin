@@ -111,8 +111,8 @@
                             class="border rounded-xl mb-2 p-4 flex justify-between items-center
                                 {{ $esPendiente ? 'border-[#6B8E23] bg-[#F4F7EE]' : 'border-gray-200 bg-white' }}">
                             <div>
-                                <div class="font-medium">
-                                    {{ $ticket->categoria }}
+                                <div class="font-medium max-w-[220px] truncate" title="{{ $ticket->descripcion }}">
+                                    {{ $ticket->descripcion ?: 'Sin descripción' }}
                                 </div>
 
                                 <div class="text-xs text-gray-400 mt-1">
