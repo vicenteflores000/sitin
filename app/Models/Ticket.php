@@ -10,6 +10,7 @@ use App\Models\TicketAssignment;
 use App\Models\TicketResolution;
 use App\Models\TicketPart;
 use App\Models\TicketAction;
+use App\Models\TicketSchedule;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -92,5 +93,10 @@ class Ticket extends Model
     public function actions(): HasMany
     {
         return $this->hasMany(TicketAction::class)->orderByDesc('created_at');
+    }
+
+    public function schedules(): HasMany
+    {
+        return $this->hasMany(TicketSchedule::class)->orderByDesc('start_at');
     }
 }

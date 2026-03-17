@@ -13,7 +13,16 @@ class DashboardController extends Controller
     {
         $userMail = auth()->user()->email;
 
-        $tickets = Ticket::where('usuario_mail', $userMail)->get();
+        $tickets = Ticket::where('usuario_mail', $userMail)
+            ->with([
+                'assignments.technician',
+                'schedules',
+                'actions.creator',
+                'resolution',
+                'latestStatusEvent',
+            ])
+            ->orderByDesc('created_at')
+            ->get();
 
         $total = $tickets->count();
 
@@ -25,8 +34,7 @@ class DashboardController extends Controller
 
         $cerrados = $tickets->where('estado_glpi', 'cerrado')->count();
 
-        $ultimos = $tickets
-            ->sortByDesc('created_at');
+        $ultimos = $tickets;
 
             $glpiStatus = 'online';
 

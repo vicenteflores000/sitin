@@ -65,7 +65,7 @@
 
             {{-- Card principal --}}
             <div class="bg-white rounded-xl shadow-xl border border-gray-200 p-6 flex flex-col"
-                style="height: 380px; min-height: 380px; max-height: 380px;">
+                style="height: 420px; min-height: 420px; max-height: 420px;">
 
                 <div class="flex items-center justify-between mb-4 gap-3">
                     <h2 class="text-lg font-medium">
@@ -91,7 +91,7 @@
                 </div>
 
                 {{-- Contenedor scrollable --}}
-                <div class="flex-1 overflow-y-auto" style="max-height: calc(380px - 5rem);">
+                <div class="flex-1 overflow-y-auto" style="max-height: calc(420px - 5rem);">
 
                     <div class="space-y-3 pr-2">
                         @forelse($ultimos as $ticket)
@@ -102,30 +102,113 @@
                         'en_espera',
                         ]);
 
-                        $idHibrido = $ticket->glpi_ticket_id
-                        ? "{$ticket->id}-{$ticket->glpi_ticket_id}"
-                        : "W{$ticket->id}-XXXX";
+                        $establecimientoId = $ticket->locacion_id ?? 0;
+                        $usuarioId = auth()->id() ?? 0;
+                        $idCompuesto = sprintf('%03d%03d%03d', $establecimientoId, $usuarioId, $ticket->id);
+
+                        $statusRaw = $ticket->estado_glpi ?: $ticket->latestStatusEvent?->to_status;
+                        $statusLabel = $statusRaw
+                            ? ucfirst(str_replace('_', ' ', $statusRaw))
+                            : 'Sin estado';
                         @endphp
 
                         <div
-                            class="border rounded-xl mb-2 p-4 flex justify-between items-center
-                                {{ $esPendiente ? 'border-[#6B8E23] bg-[#F4F7EE]' : 'border-gray-200 bg-white' }}">
-                            <div>
-                                <div class="font-medium max-w-[220px] truncate" title="{{ $ticket->descripcion }}">
-                                    {{ $ticket->descripcion ?: 'Sin descripción' }}
+                            class="ticket-card group border rounded-xl mb-2 p-4 cursor-pointer
+                                {{ $esPendiente ? 'border-[#6B8E23] bg-[#F4F7EE]' : 'border-gray-200 bg-white' }}"
+                            data-ticket-id="{{ $ticket->id }}"
+                            data-ticket-title="Ticket #{{ $idCompuesto }}">
+                            <div class="flex items-center justify-between gap-3">
+                                <div class="flex items-center gap-2">
+                                    <div class="text-sm font-semibold text-gray-800">Ticket #{{ $idCompuesto }}</div>
+                                    <span class="text-[10px] px-2 py-0.5 rounded-full border border-gray-200 bg-white text-gray-600">
+                                        {{ $statusLabel }}
+                                    </span>
                                 </div>
-
-                                <div class="text-xs text-gray-400 mt-1">
-                                    ID {{ $idHibrido }}
-                                </div>
-
-                                <div class="text-sm text-gray-500">
+                                <div class="text-xs text-gray-400">
                                     {{ $ticket->created_at->format('d-m-Y H:i') }}
                                 </div>
                             </div>
 
-                            <div class="text-sm font-medium {{ $esPendiente ? 'text-[#6B8E23]' : 'text-gray-500' }}">
-                                {{ ucfirst(str_replace('_', ' ', $ticket->estado_glpi)) }}
+                            <div class="text-sm text-gray-700 mt-2 truncate" title="{{ $ticket->descripcion }}">
+                                {{ $ticket->descripcion ?: 'Sin descripción' }}
+                            </div>
+
+                            <div class="text-xs text-gray-400 mt-2 opacity-0 group-hover:opacity-100 transition">
+                                Clic para ver las acciones
+                            </div>
+                        </div>
+
+                        <div id="ticket-history-{{ $ticket->id }}" class="hidden">
+                            <div class="space-y-4">
+                                <div>
+                                    <div class="text-xs uppercase tracking-wide text-gray-500 mb-2">Asignaciones</div>
+                                    @if ($ticket->assignments->count() > 0)
+                                        <div class="space-y-2 text-sm text-gray-700">
+                                            @foreach ($ticket->assignments->sortByDesc('assigned_at') as $assignment)
+                                                <div class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
+                                                    {{ $assignment->assigned_at?->format('d-m-Y H:i') ?? 'Sin fecha' }}
+                                                    — {{ $assignment->technician?->name ?? 'Sin técnico' }}
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    @else
+                                        <div class="text-sm text-gray-500">Sin asignaciones registradas.</div>
+                                    @endif
+                                </div>
+
+                                <div>
+                                    <div class="text-xs uppercase tracking-wide text-gray-500 mb-2">Agendamiento</div>
+                                    @if ($ticket->schedules->count() > 0)
+                                        <div class="space-y-2 text-sm text-gray-700">
+                                            @foreach ($ticket->schedules->sortByDesc('start_at') as $schedule)
+                                                <div class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
+                                                    {{ $schedule->start_at?->format('d-m-Y H:i') ?? 'Sin fecha' }}
+                                                    — {{ $schedule->end_at?->format('d-m-Y H:i') ?? 'Sin fecha' }}
+                                                    @if ($schedule->modality)
+                                                        ({{ $schedule->modality }})
+                                                    @endif
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    @else
+                                        <div class="text-sm text-gray-500">Sin agendamientos registrados.</div>
+                                    @endif
+                                </div>
+
+                                <div>
+                                    <div class="text-xs uppercase tracking-wide text-gray-500 mb-2">Acciones</div>
+                                    @if ($ticket->actions->count() > 0)
+                                        <div class="space-y-2 text-sm text-gray-700">
+                                            @foreach ($ticket->actions as $action)
+                                                <div class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
+                                                    <div class="text-xs text-gray-500">
+                                                        {{ $action->created_at?->format('d-m-Y H:i') ?? 'Sin fecha' }}
+                                                    </div>
+                                                    <div class="font-medium">
+                                                        {{ ucfirst($action->action_type) }} — {{ ucfirst(str_replace('_', ' ', $action->status)) }}
+                                                    </div>
+                                                    <div class="text-gray-600">{{ $action->description }}</div>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    @else
+                                        <div class="text-sm text-gray-500">Sin acciones registradas.</div>
+                                    @endif
+                                </div>
+
+                                <div>
+                                    <div class="text-xs uppercase tracking-wide text-gray-500 mb-2">Resolución</div>
+                                    @if ($ticket->resolution)
+                                        <div class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700">
+                                            <div class="text-xs text-gray-500 mb-1">
+                                                {{ $ticket->resolution->resolved_at?->format('d-m-Y H:i') ?? 'Sin fecha' }}
+                                            </div>
+                                            <div>{{ $ticket->resolution->resolution_text }}</div>
+                                        </div>
+                                    @else
+                                        <div class="text-sm text-gray-500">Aún no se registra resolución.</div>
+                                    @endif
+                                </div>
                             </div>
                         </div>
                         @empty
@@ -219,6 +302,68 @@
             </div>
             @endif
 
+            <div id="ticket-history-modal" class="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 hidden" aria-hidden="true">
+                <div class="bg-white rounded-xl shadow-xl w-full max-w-2xl p-6" role="dialog" aria-modal="true" aria-labelledby="ticket-history-title">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <p class="text-xs uppercase tracking-wide text-gray-500">Historial</p>
+                            <h3 id="ticket-history-title" class="text-lg font-semibold text-gray-800">Historial ticket</h3>
+                        </div>
+                        <button type="button" id="ticket-history-close" class="text-gray-500 hover:text-gray-700">✕</button>
+                    </div>
+
+                    <div id="ticket-history-content" class="max-h-[60vh] overflow-y-auto pr-2"></div>
+                </div>
+            </div>
+
+            <script>
+                (function () {
+                    const cards = document.querySelectorAll('.ticket-card');
+                    const modal = document.getElementById('ticket-history-modal');
+                    const modalContent = document.getElementById('ticket-history-content');
+                    const modalTitle = document.getElementById('ticket-history-title');
+                    const modalClose = document.getElementById('ticket-history-close');
+
+                    function openModal(title, content) {
+                        if (!modal || !modalContent || !modalTitle) return;
+                        modalTitle.textContent = title || 'Historial ticket';
+                        modalContent.innerHTML = content || '<div class="text-sm text-gray-500">Sin historial disponible.</div>';
+                        modal.classList.remove('hidden');
+                        modal.setAttribute('aria-hidden', 'false');
+                    }
+
+                    function closeModal() {
+                        if (!modal) return;
+                        modal.classList.add('hidden');
+                        modal.setAttribute('aria-hidden', 'true');
+                    }
+
+                    cards.forEach((card) => {
+                        card.addEventListener('click', () => {
+                            const ticketId = card.dataset.ticketId;
+                            const title = card.dataset.ticketTitle || 'Historial ticket';
+                            const contentEl = ticketId ? document.getElementById(`ticket-history-${ticketId}`) : null;
+                            openModal(title, contentEl ? contentEl.innerHTML : null);
+                        });
+                    });
+
+                    if (modalClose) {
+                        modalClose.addEventListener('click', closeModal);
+                    }
+                    if (modal) {
+                        modal.addEventListener('click', (event) => {
+                            if (event.target === modal) {
+                                closeModal();
+                            }
+                        });
+                    }
+                    window.addEventListener('keydown', (event) => {
+                        if (event.key === 'Escape') {
+                            closeModal();
+                        }
+                    });
+                })();
+            </script>
         </div>
     </div>
 
