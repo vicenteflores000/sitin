@@ -10,6 +10,8 @@ use App\Models\TicketResolution;
 use App\Models\TicketStatusEvent;
 use App\Models\User;
 use App\Mail\TicketAssigned;
+use App\Mail\TicketActionLogged;
+use App\Mail\TicketResolved;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -104,7 +106,7 @@ class AdminTicketController extends Controller
             'resolved_at' => now(),
         ]);
 
-        TicketResolution::updateOrCreate(
+        $resolution = TicketResolution::updateOrCreate(
             ['ticket_id' => $ticket->id],
             [
                 'categoria_interna' => $categoriaInterna,
@@ -116,6 +118,7 @@ class AdminTicketController extends Controller
         );
 
         $this->changeStatus($ticket, 'resuelto', null);
+        $this->sendResolutionNotification($ticket, $resolution);
 
         return back();
     }
@@ -132,13 +135,15 @@ class AdminTicketController extends Controller
             'status' => 'required|in:pendiente,en_progreso,completado',
         ]);
 
-        TicketAction::create([
+        $action = TicketAction::create([
             'ticket_id' => $ticket->id,
             'action_type' => $data['action_type'],
             'description' => $data['description'],
             'status' => $data['status'],
             'created_by' => auth()->id(),
         ]);
+
+        $this->sendActionNotification($ticket, $action);
 
         return back();
     }
@@ -235,6 +240,40 @@ class AdminTicketController extends Controller
                 ->send(new TicketAssigned($ticket, $technician));
         } catch (\Throwable $exception) {
             Log::warning('No se pudo enviar correo de asignación de ticket', [
+                'ticket_id' => $ticket->id,
+                'error' => $exception->getMessage(),
+            ]);
+        }
+    }
+
+    protected function sendActionNotification(Ticket $ticket, TicketAction $action): void
+    {
+        if (! $ticket->usuario_mail) {
+            return;
+        }
+
+        try {
+            Mail::to($ticket->usuario_mail)
+                ->send(new TicketActionLogged($ticket, $action, auth()->user()));
+        } catch (\Throwable $exception) {
+            Log::warning('No se pudo enviar correo de acción de ticket', [
+                'ticket_id' => $ticket->id,
+                'error' => $exception->getMessage(),
+            ]);
+        }
+    }
+
+    protected function sendResolutionNotification(Ticket $ticket, TicketResolution $resolution): void
+    {
+        if (! $ticket->usuario_mail) {
+            return;
+        }
+
+        try {
+            Mail::to($ticket->usuario_mail)
+                ->send(new TicketResolved($ticket, $resolution, auth()->user()));
+        } catch (\Throwable $exception) {
+            Log::warning('No se pudo enviar correo de resolución de ticket', [
                 'ticket_id' => $ticket->id,
                 'error' => $exception->getMessage(),
             ]);
