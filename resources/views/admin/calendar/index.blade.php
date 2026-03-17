@@ -436,8 +436,8 @@
 
                 async function updateEvent(event) {
                     const payload = {
-                        start_at: event.start.toISOString(),
-                        end_at: event.end ? event.end.toISOString() : event.start.toISOString(),
+                        start_at: toLocalInput(event.start),
+                        end_at: toLocalInput(event.end || event.start),
                         modality: event.extendedProps?.modality || 'remota',
                     };
 
@@ -482,8 +482,8 @@
                     if (scheduleId) {
                         setScheduling(true, 'Guardando');
                         const payload = {
-                            start_at: new Date(startInput.value).toISOString(),
-                            end_at: new Date(endInput.value).toISOString(),
+                            start_at: startInput.value,
+                            end_at: endInput.value,
                             modality: modalitySelect.value || 'remota',
                         };
                         const response = await fetch(`{{ url('/admin/calendario/events') }}/${scheduleId}`, {
@@ -522,8 +522,8 @@
                     setScheduling(true, 'Agendando');
                     const payload = {
                         ticket_id: ticketSelect.value,
-                        start_at: new Date(startInput.value).toISOString(),
-                        end_at: new Date(endInput.value).toISOString(),
+                        start_at: startInput.value,
+                        end_at: endInput.value,
                         modality: modalitySelect.value || 'remota',
                     };
 
