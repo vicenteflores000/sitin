@@ -21,11 +21,6 @@ class StoreTicketRequest extends FormRequest
             'locacion_hija_texto' => 'required|string|max:255',
         ];
 
-        if (!auth()->check()) {
-            $rules['auth_email'] = 'required|email';
-            $rules['auth_password'] = 'required|string';
-        }
-
         return $rules;
     }
 }

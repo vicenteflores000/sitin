@@ -50,9 +50,6 @@
 
                 <form id="ticket-form" method="POST" action="/ticket">
                     @csrf
-                    <input type="hidden" name="auth_email" id="auth_email_hidden" value="{{ old('auth_email') }}">
-                    <input type="hidden" name="auth_password" id="auth_password_hidden">
-
                     <div class="grid grid-cols-1 gap-4 pr-2">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Descripción breve del problema</label>
@@ -194,33 +191,7 @@
     <div id="auth-modal" class="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50 hidden" aria-hidden="true">
         <div class="bg-white rounded-xl shadow-lg w-[22rem] p-6" role="dialog" aria-modal="true" aria-labelledby="auth-title">
             <h2 id="auth-title" class="text-lg font-semibold mb-2">Antes de continuar</h2>
-            <p class="text-sm text-gray-500 mb-4">Necesitamos que inicie sesión para poder continuar.</p>
-
-            <label for="auth_email_input" class="block text-sm font-medium text-gray-700 mb-1">Correo</label>
-            <input type="email" id="auth_email_input" autocomplete="email" value="{{ old('auth_email') }}" required
-                class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-
-            <label for="auth_password_input" class="block text-sm font-medium text-gray-700 mb-1 mt-3">Clave</label>
-            <input type="password" id="auth_password_input" autocomplete="current-password" required
-                class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-
-            <div class="mt-2 text-right">
-                <a href="{{ route('password.request') }}"
-                    class="text-xs text-gray-500 hover:text-gray-700">
-                    Olvidé mi contraseña
-                </a>
-            </div>
-
-            <div class="mt-4 flex items-center gap-2">
-                <button type="button" id="auth-cancel"
-                    class="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                    Cancelar
-                </button>
-                <button type="button" id="auth-submit"
-                    class="flex-1 rounded-lg bg-blue-600 px-3 py-2 text-sm text-white hover:bg-blue-700 transition">
-                    Enviar
-                </button>
-            </div>
+            <p class="text-sm text-gray-500 mb-4">Solo puedes acceder con tu correo institucional.</p>
 
             <div class="mt-4">
                 <a href="{{ route('auth.microsoft.redirect') }}" id="auth-outlook"
@@ -233,6 +204,13 @@
                     </svg>
                     Iniciar con Outlook
                 </a>
+            </div>
+
+            <div class="mt-4">
+                <button type="button" id="auth-cancel"
+                    class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                    Cancelar
+                </button>
             </div>
         </div>
     </div>
@@ -326,12 +304,7 @@
         (function () {
             const ticketForm = document.getElementById('ticket-form');
             const modal = document.getElementById('auth-modal');
-            const authEmailInput = document.getElementById('auth_email_input');
-            const authPasswordInput = document.getElementById('auth_password_input');
-            const authEmailHidden = document.getElementById('auth_email_hidden');
-            const authPasswordHidden = document.getElementById('auth_password_hidden');
             const cancelButton = document.getElementById('auth-cancel');
-            const submitButton = document.getElementById('auth-submit');
             const outlookButton = document.getElementById('auth-outlook');
             const authLoading = document.getElementById('auth-loading');
             const ticketSubmit = document.getElementById('ticket-submit');
@@ -560,7 +533,6 @@
                 authRedirect = redirectUrl;
                 modal.classList.remove('hidden');
                 modal.setAttribute('aria-hidden', 'false');
-                authEmailInput.focus();
             }
 
             window.openAuthModal = openModal;
@@ -612,7 +584,6 @@
             function closeModal() {
                 modal.classList.add('hidden');
                 modal.setAttribute('aria-hidden', 'true');
-                authPasswordInput.value = '';
                 readyToSubmit = false;
             }
 
@@ -656,48 +627,6 @@
                 }
             }
 
-            async function authenticateOnly() {
-                const tokenInput = ticketForm.querySelector('input[name="_token"]');
-                const formData = new FormData();
-                formData.append('_token', tokenInput ? tokenInput.value : '');
-                formData.append('email', authEmailInput.value.trim());
-                formData.append('password', authPasswordInput.value);
-
-                const response = await fetch('/login', {
-                    method: 'POST',
-                    headers: {
-                        'Accept': 'application/json'
-                    },
-                    body: formData,
-                    credentials: 'same-origin',
-                });
-
-                if (response.status === 423) {
-                    const payload = await response.json().catch(() => ({}));
-                    showToast(payload.message || 'Debes cambiar tu clave provisoria.');
-                    hideAuthLoading();
-                    if (payload.redirect) {
-                        window.location.href = payload.redirect;
-                    }
-                    return false;
-                }
-
-                if (response.status === 422) {
-                    const payload = await response.json().catch(() => ({}));
-                    showToast(payload.message || 'Correo o clave inválidos.');
-                    hideAuthLoading();
-                    return false;
-                }
-
-                if (!response.ok) {
-                    showToast('No se pudo iniciar sesión.');
-                    hideAuthLoading();
-                    return false;
-                }
-
-                return true;
-            }
-
             async function submitTicketAjax() {
                 if (isSubmitting) {
                     return;
@@ -737,7 +666,6 @@
                     const payload = await response.json();
                     clearDraft();
                     ticketForm.reset();
-                    authPasswordHidden.value = '';
                     setImpacto('');
                     if (locacionSelect && locacionLabel) {
                         locacionSelect.value = '';
@@ -753,9 +681,6 @@
                             authMenu.__x.$data.open = false;
                         }
                     }
-                    if (authMenuText) {
-                        authMenuText.textContent = authEmailInput.value.trim() || authMenuText.textContent;
-                    }
                     showToast(`Ticket enviado correctamente con el ID: ${payload.ticket_id}`, 'success');
                     setSubmitting(false);
                     hideAuthLoading();
@@ -765,66 +690,6 @@
                     hideAuthLoading();
                 }
             }
-
-            submitButton.addEventListener('click', async () => {
-                showAuthLoading();
-                if (!authEmailInput.value.trim() || !authPasswordInput.value.trim()) {
-                    hideAuthLoading();
-                    return;
-                }
-
-                authEmailHidden.value = authEmailInput.value.trim();
-                authPasswordHidden.value = authPasswordInput.value;
-
-                if (authContext !== 'ticket') {
-                    if (isSubmitting) {
-                        hideAuthLoading();
-                        return;
-                    }
-                    isSubmitting = true;
-                    submitButton.disabled = true;
-                    const ok = await authenticateOnly();
-                    if (!ok) {
-                        isSubmitting = false;
-                        submitButton.disabled = false;
-                        return;
-                    }
-
-                    sessionActive = true;
-                    requiresAuth = false;
-
-                    closeModal();
-                    if (authContext === 'dashboard') {
-                        window.location.href = authRedirect || '/dashboard';
-                        return;
-                    }
-
-                    if (authMenu) {
-                        authMenu.dataset.authenticated = 'true';
-                        if (authMenu.__x) {
-                            authMenu.__x.$data.authenticated = true;
-                            authMenu.__x.$data.open = false;
-                        }
-                    }
-                    if (authMenuText) {
-                        authMenuText.textContent = authEmailInput.value.trim();
-                    }
-
-                    showToast('Sesión iniciada correctamente', 'success');
-                    isSubmitting = false;
-                    submitButton.disabled = false;
-                    hideAuthLoading();
-                    return;
-                }
-
-                if (!requiresAuth) {
-                    readyToSubmit = true;
-                    submitTicketAjax();
-                    return;
-                }
-
-                submitTicketAjax();
-            });
 
             if (outlookButton) {
                 outlookButton.addEventListener('click', () => {
@@ -848,16 +713,6 @@
                 if (event.key === 'Escape') {
                     closeModal();
                 }
-                if (event.key !== 'Enter') {
-                    return;
-                }
-                const isModalOpen = !modal.classList.contains('hidden');
-                if (isModalOpen) {
-                    event.preventDefault();
-                    submitButton.click();
-                } else {
-                    event.preventDefault();
-                }
             });
 
             restoreDraft();
@@ -866,9 +721,6 @@
                 submitTicketAjax();
             }
 
-            @if ($errors->has('auth_email') || $errors->has('auth_password'))
-                openModal();
-            @endif
         })();
     </script>
 </x-layouts.clean>
