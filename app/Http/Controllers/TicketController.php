@@ -8,6 +8,7 @@ use App\Services\PriorityService;
 use App\Services\GlpiService;
 use App\Models\Ticket;
 use App\Models\Locacion;
+use App\Models\TicketAttachment;
 use App\Models\TicketStatusEvent;
 use App\Mail\TicketCreated;
 use Illuminate\Support\Facades\Log;
@@ -78,6 +79,25 @@ class TicketController extends Controller
             'origen' => 'Formulario TI',
             'estado_envio_glpi' => null,
         ]);
+
+        $attachments = $request->file('attachments', []);
+        foreach ($attachments as $file) {
+            try {
+                $path = $file->store("tickets/{$ticket->id}", 'public');
+                TicketAttachment::create([
+                    'ticket_id' => $ticket->id,
+                    'path' => $path,
+                    'original_name' => $file->getClientOriginalName(),
+                    'mime_type' => $file->getMimeType() ?? $file->getClientMimeType(),
+                    'size' => $file->getSize() ?? 0,
+                ]);
+            } catch (\Throwable $exception) {
+                Log::warning('No se pudo guardar adjunto de ticket', [
+                    'ticket_id' => $ticket->id,
+                    'error' => $exception->getMessage(),
+                ]);
+            }
+        }
 
         TicketStatusEvent::create([
             'ticket_id' => $ticket->id,

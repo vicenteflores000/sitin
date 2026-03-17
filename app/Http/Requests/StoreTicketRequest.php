@@ -19,6 +19,8 @@ class StoreTicketRequest extends FormRequest
             'descripcion' => 'required|string|max:300',
             'locacion_id' => 'required|exists:locaciones,id',
             'locacion_hija_texto' => 'required|string|max:255',
+            'attachments' => 'nullable|array|max:3',
+            'attachments.*' => 'file|mimes:jpg,jpeg,png,pdf|max:20480',
         ];
 
         return $rules;

@@ -28,6 +28,7 @@ class AdminTicketController extends Controller
             'resolution',
             'parts',
             'actions.creator',
+            'attachments',
         ])->orderByDesc('created_at')->get();
 
         $admins = User::where('role', 'admin')->orderBy('name')->get();

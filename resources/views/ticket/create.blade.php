@@ -90,6 +90,13 @@
                         </div>
 
                         <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Adjuntar archivos (opcional)</label>
+                            <input type="file" name="attachments[]" multiple accept=".jpg,.jpeg,.png,.pdf"
+                                class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700">
+                            <p class="text-xs text-gray-500 mt-1">Máximo 3 archivos (JPG, PNG o PDF). Tamaño máximo 20 MB cada uno.</p>
+                        </div>
+
+                        <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Impacto laboral (opcional)</label>
                             <input type="hidden" name="impacto" id="impacto_input" value="{{ old('impacto') }}">
                             <div class="grid grid-cols-3 gap-2">

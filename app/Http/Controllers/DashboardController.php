@@ -20,6 +20,7 @@ class DashboardController extends Controller
                 'actions.creator',
                 'resolution',
                 'latestStatusEvent',
+                'attachments',
             ])
             ->orderByDesc('created_at')
             ->get();

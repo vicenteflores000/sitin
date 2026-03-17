@@ -179,6 +179,31 @@
                                                         <div class="text-xs text-gray-400">Descripción</div>
                                                         <div class="mt-1 text-sm text-gray-700">{{ $ticket->descripcion }}</div>
                                                     </div>
+
+                                                    @if ($ticket->attachments->count() > 0)
+                                                        <div class="mt-4">
+                                                            <div class="text-xs text-gray-400">Adjuntos</div>
+                                                            <div class="mt-2 flex flex-wrap gap-2">
+                                                                @foreach ($ticket->attachments as $attachment)
+                                                                    @php
+                                                                        $attachmentUrl = Storage::disk('public')->url($attachment->path);
+                                                                        $isImage = str_starts_with($attachment->mime_type ?? '', 'image/');
+                                                                    @endphp
+                                                                    <button type="button"
+                                                                        class="admin-attachment-thumb h-[10px] w-[10px] rounded-sm border border-gray-300 bg-white overflow-hidden"
+                                                                        data-url="{{ $attachmentUrl }}"
+                                                                        data-name="{{ $attachment->original_name }}"
+                                                                        data-mime="{{ $attachment->mime_type }}">
+                                                                        @if ($isImage)
+                                                                            <img src="{{ $attachmentUrl }}" alt="{{ $attachment->original_name }}" class="h-full w-full object-cover">
+                                                                        @else
+                                                                            <span class="block text-[6px] leading-[10px] text-gray-500 text-center">PDF</span>
+                                                                        @endif
+                                                                    </button>
+                                                                @endforeach
+                                                            </div>
+                                                        </div>
+                                                    @endif
                                                 </div>
 
                                                 <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-700">
@@ -345,4 +370,76 @@
 
         </div>
     </div>
+
+    <div id="admin-attachment-viewer" class="fixed inset-0 bg-black/90 z-50 hidden" aria-hidden="true">
+        <div class="absolute inset-0 flex items-center justify-center">
+            <div id="admin-attachment-stage" class="max-w-[90vw] max-h-[85vh]"></div>
+        </div>
+        <div class="absolute top-4 right-4 flex items-center gap-2">
+            <div id="admin-attachment-caption" class="text-xs text-gray-200"></div>
+            <button type="button" id="admin-attachment-close"
+                class="text-white text-2xl leading-none hover:text-gray-200">✕</button>
+        </div>
+    </div>
+
+    @push('scripts')
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                const viewer = document.getElementById('admin-attachment-viewer');
+                const stage = document.getElementById('admin-attachment-stage');
+                const caption = document.getElementById('admin-attachment-caption');
+                const closeBtn = document.getElementById('admin-attachment-close');
+
+                function openViewer({ url, name, mime }) {
+                    if (!viewer || !stage) return;
+                    const isImage = mime && mime.startsWith('image/');
+                    if (isImage) {
+                        stage.innerHTML = `<img src="${url}" alt="${name || 'Adjunto'}" class="max-w-[90vw] max-h-[85vh] object-contain">`;
+                    } else {
+                        stage.innerHTML = `<iframe src="${url}" class="w-[90vw] h-[85vh] bg-white" title="${name || 'Adjunto'}"></iframe>`;
+                    }
+                    if (caption) {
+                        caption.textContent = name || '';
+                    }
+                    viewer.classList.remove('hidden');
+                    viewer.setAttribute('aria-hidden', 'false');
+                }
+
+                function closeViewer() {
+                    if (!viewer) return;
+                    viewer.classList.add('hidden');
+                    viewer.setAttribute('aria-hidden', 'true');
+                    if (stage) {
+                        stage.innerHTML = '';
+                    }
+                }
+
+                document.querySelectorAll('.admin-attachment-thumb').forEach((thumb) => {
+                    thumb.addEventListener('click', () => {
+                        openViewer({
+                            url: thumb.dataset.url,
+                            name: thumb.dataset.name,
+                            mime: thumb.dataset.mime,
+                        });
+                    });
+                });
+
+                if (closeBtn) {
+                    closeBtn.addEventListener('click', closeViewer);
+                }
+                if (viewer) {
+                    viewer.addEventListener('click', (event) => {
+                        if (event.target === viewer) {
+                            closeViewer();
+                        }
+                    });
+                }
+                window.addEventListener('keydown', (event) => {
+                    if (event.key === 'Escape') {
+                        closeViewer();
+                    }
+                });
+            });
+        </script>
+    @endpush
 </x-layouts.clean>

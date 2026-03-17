@@ -211,6 +211,18 @@
                                 </div>
                             </div>
                         </div>
+
+                        @php
+                            $attachmentsPayload = $ticket->attachments->map(function ($attachment) {
+                                return [
+                                    'url' => Storage::disk('public')->url($attachment->path),
+                                    'name' => $attachment->original_name,
+                                    'mime' => $attachment->mime_type,
+                                ];
+                            })->values();
+                        @endphp
+                        <div id="ticket-attachments-{{ $ticket->id }}" class="hidden"
+                            data-attachments='@json($attachmentsPayload)'></div>
                         @empty
                         <div class="text-center text-gray-500 py-6">
                             No hay tickets registrados
@@ -303,7 +315,7 @@
             @endif
 
             <div id="ticket-history-modal" class="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 hidden" aria-hidden="true">
-                <div class="bg-white rounded-xl shadow-xl w-full max-w-2xl p-6" role="dialog" aria-modal="true" aria-labelledby="ticket-history-title">
+                <div class="bg-white rounded-xl shadow-xl w-full max-w-2xl p-6 relative" role="dialog" aria-modal="true" aria-labelledby="ticket-history-title">
                     <div class="flex items-center justify-between mb-4">
                         <div>
                             <p class="text-xs uppercase tracking-wide text-gray-500">Historial</p>
@@ -313,6 +325,26 @@
                     </div>
 
                     <div id="ticket-history-content" class="max-h-[60vh] overflow-y-auto pr-2"></div>
+
+                    <button type="button" id="ticket-attachments-open"
+                        class="absolute bottom-4 right-4 rounded-full border border-gray-300 bg-white px-4 py-2 text-xs text-gray-700 shadow-sm hover:bg-gray-50 hidden">
+                        Ver adjuntos
+                    </button>
+                </div>
+            </div>
+
+            <div id="ticket-attachments-viewer" class="fixed inset-0 bg-black/90 z-50 hidden" aria-hidden="true">
+                <div class="absolute inset-0 flex items-center justify-center">
+                    <button type="button" id="attachments-prev"
+                        class="absolute left-4 text-white text-3xl font-light px-3 py-1 hover:text-gray-200">‹</button>
+                    <div id="attachments-stage" class="max-w-[90vw] max-h-[85vh]"></div>
+                    <button type="button" id="attachments-next"
+                        class="absolute right-4 text-white text-3xl font-light px-3 py-1 hover:text-gray-200">›</button>
+                </div>
+                <div class="absolute top-4 right-4 flex items-center gap-2">
+                    <div id="attachments-caption" class="text-xs text-gray-200"></div>
+                    <button type="button" id="attachments-close"
+                        class="text-white text-2xl leading-none hover:text-gray-200">✕</button>
                 </div>
             </div>
 
@@ -323,6 +355,15 @@
                     const modalContent = document.getElementById('ticket-history-content');
                     const modalTitle = document.getElementById('ticket-history-title');
                     const modalClose = document.getElementById('ticket-history-close');
+                    const attachmentsButton = document.getElementById('ticket-attachments-open');
+                    const viewer = document.getElementById('ticket-attachments-viewer');
+                    const viewerStage = document.getElementById('attachments-stage');
+                    const viewerCaption = document.getElementById('attachments-caption');
+                    const viewerPrev = document.getElementById('attachments-prev');
+                    const viewerNext = document.getElementById('attachments-next');
+                    const viewerClose = document.getElementById('attachments-close');
+                    let currentAttachments = [];
+                    let currentIndex = 0;
 
                     function openModal(title, content) {
                         if (!modal || !modalContent || !modalTitle) return;
@@ -343,9 +384,53 @@
                             const ticketId = card.dataset.ticketId;
                             const title = card.dataset.ticketTitle || 'Historial ticket';
                             const contentEl = ticketId ? document.getElementById(`ticket-history-${ticketId}`) : null;
+                            const attachmentsEl = ticketId ? document.getElementById(`ticket-attachments-${ticketId}`) : null;
+                            currentAttachments = [];
+                            if (attachmentsEl) {
+                                try {
+                                    currentAttachments = JSON.parse(attachmentsEl.dataset.attachments || '[]');
+                                } catch {
+                                    currentAttachments = [];
+                                }
+                            }
+                            if (attachmentsButton) {
+                                attachmentsButton.classList.toggle('hidden', currentAttachments.length === 0);
+                            }
                             openModal(title, contentEl ? contentEl.innerHTML : null);
                         });
                     });
+
+                    function renderAttachment() {
+                        if (!viewerStage) return;
+                        const item = currentAttachments[currentIndex];
+                        if (!item) {
+                            viewerStage.innerHTML = '';
+                            return;
+                        }
+                        const isImage = item.mime && item.mime.startsWith('image/');
+                        if (isImage) {
+                            viewerStage.innerHTML = `<img src="${item.url}" alt="${item.name || 'Adjunto'}" class="max-w-[90vw] max-h-[85vh] object-contain">`;
+                        } else {
+                            viewerStage.innerHTML = `<iframe src="${item.url}" class="w-[90vw] h-[85vh] bg-white" title="${item.name || 'Adjunto'}"></iframe>`;
+                        }
+                        if (viewerCaption) {
+                            viewerCaption.textContent = `${currentIndex + 1} / ${currentAttachments.length} ${item.name ? '· ' + item.name : ''}`;
+                        }
+                    }
+
+                    function openViewer() {
+                        if (!viewer || currentAttachments.length === 0) return;
+                        currentIndex = 0;
+                        renderAttachment();
+                        viewer.classList.remove('hidden');
+                        viewer.setAttribute('aria-hidden', 'false');
+                    }
+
+                    function closeViewer() {
+                        if (!viewer) return;
+                        viewer.classList.add('hidden');
+                        viewer.setAttribute('aria-hidden', 'true');
+                    }
 
                     if (modalClose) {
                         modalClose.addEventListener('click', closeModal);
@@ -357,9 +442,47 @@
                             }
                         });
                     }
+                    if (attachmentsButton) {
+                        attachmentsButton.addEventListener('click', openViewer);
+                    }
+                    if (viewerPrev) {
+                        viewerPrev.addEventListener('click', () => {
+                            if (currentAttachments.length === 0) return;
+                            currentIndex = (currentIndex - 1 + currentAttachments.length) % currentAttachments.length;
+                            renderAttachment();
+                        });
+                    }
+                    if (viewerNext) {
+                        viewerNext.addEventListener('click', () => {
+                            if (currentAttachments.length === 0) return;
+                            currentIndex = (currentIndex + 1) % currentAttachments.length;
+                            renderAttachment();
+                        });
+                    }
+                    if (viewerClose) {
+                        viewerClose.addEventListener('click', closeViewer);
+                    }
+                    if (viewer) {
+                        viewer.addEventListener('click', (event) => {
+                            if (event.target === viewer) {
+                                closeViewer();
+                            }
+                        });
+                    }
                     window.addEventListener('keydown', (event) => {
                         if (event.key === 'Escape') {
+                            closeViewer();
                             closeModal();
+                        }
+                        if (event.key === 'ArrowRight' && !viewer?.classList.contains('hidden')) {
+                            if (currentAttachments.length === 0) return;
+                            currentIndex = (currentIndex + 1) % currentAttachments.length;
+                            renderAttachment();
+                        }
+                        if (event.key === 'ArrowLeft' && !viewer?.classList.contains('hidden')) {
+                            if (currentAttachments.length === 0) return;
+                            currentIndex = (currentIndex - 1 + currentAttachments.length) % currentAttachments.length;
+                            renderAttachment();
                         }
                     });
                 })();
