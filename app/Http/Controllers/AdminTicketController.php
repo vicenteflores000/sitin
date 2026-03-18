@@ -186,6 +186,56 @@ class AdminTicketController extends Controller
         return back();
     }
 
+    public function quickClose(Request $request, Ticket $ticket): RedirectResponse
+    {
+        if (! $this->canManageTicket($ticket)) {
+            return back()->withErrors(['quick_close' => 'Solo el técnico asignado puede cerrar este ticket.']);
+        }
+
+        $data = $request->validate([
+            'action_type' => 'required|in:repuesto,instalacion,compra,otro',
+            'action_status' => 'required|in:pendiente,en_progreso,completado',
+            'action_description' => 'required|string',
+            'categoria_interna' => 'required|string|max:255',
+            'problem_type' => 'required|string|max:255',
+            'root_cause' => 'required|string|max:255',
+            'resolution_text' => 'required|string',
+        ]);
+
+        $action = TicketAction::create([
+            'ticket_id' => $ticket->id,
+            'action_type' => $data['action_type'],
+            'description' => $data['action_description'],
+            'status' => $data['action_status'],
+            'created_by' => auth()->id(),
+        ]);
+
+        $ticket->update([
+            'categoria_interna' => trim($data['categoria_interna']),
+            'problem_type' => trim($data['problem_type']),
+            'root_cause' => trim($data['root_cause']),
+            'resolved_by' => auth()->id(),
+            'resolved_at' => now(),
+        ]);
+
+        $resolution = TicketResolution::updateOrCreate(
+            ['ticket_id' => $ticket->id],
+            [
+                'categoria_interna' => trim($data['categoria_interna']),
+                'root_cause' => trim($data['root_cause']),
+                'resolution_text' => $data['resolution_text'],
+                'resolved_by' => auth()->id(),
+                'resolved_at' => now(),
+            ]
+        );
+
+        $this->changeStatus($ticket, 'resuelto', null);
+        $this->sendActionNotification($ticket, $action);
+        $this->sendResolutionNotification($ticket, $resolution);
+
+        return back();
+    }
+
     public function addAction(Request $request, Ticket $ticket): RedirectResponse
     {
         if (! $this->canManageTicket($ticket)) {

@@ -40,7 +40,7 @@
                             $canManage = $assignedTechs->contains('technician_id', auth()->id());
                             $isResolved = in_array($status, ['resuelto', 'cerrado'], true);
                         @endphp
-                        <div x-data="{ open: false, tab: 'antecedentes', canResolve: {{ ($classificationComplete && $actionsCount > 0 && $canManage) ? 'true' : 'false' }} }" class="group border rounded-lg bg-gray-50 cursor-pointer {{ $isResolved ? 'px-3 py-2 text-[11px] text-gray-500' : 'p-4' }}" @click="open = true" role="button" tabindex="0">
+                        <div x-data="{ open: false, tab: 'antecedentes', canResolve: {{ ($classificationComplete && $actionsCount > 0 && $canManage) ? 'true' : 'false' }}, canManage: {{ $canManage ? 'true' : 'false' }} }" class="group border rounded-lg bg-gray-50 cursor-pointer {{ $isResolved ? 'px-3 py-2 text-[11px] text-gray-500' : 'p-4' }}" @click="open = true" role="button" tabindex="0">
                             <div class="flex items-start justify-between gap-4">
                                 <div>
                                     @php
@@ -141,11 +141,18 @@
                                                     Clasificación
                                                 </button>
                                                 <button type="button"
-                                                    :disabled="!canResolve"
-                                                    @click="canResolve ? (tab = 'resolucion') : null"
+                                                    :disabled="!canManage"
+                                                    @click="canManage ? (tab = 'resolucion') : null"
                                                     :class="tab === 'resolucion' ? 'bg-white border-gray-200 shadow-sm' : 'bg-transparent border-transparent'"
                                                     class="w-full text-left rounded-lg border px-3 py-2 transition disabled:opacity-40 disabled:cursor-not-allowed">
                                                     Resolución
+                                                </button>
+                                                <button type="button"
+                                                    :disabled="!canManage"
+                                                    @click="canManage ? (tab = 'cierre_rapido') : null"
+                                                    :class="tab === 'cierre_rapido' ? 'ring-2 ring-[#6B8E23]/20' : ''"
+                                                    class="w-full inline-flex items-center justify-center gap-1 rounded-full border border-[#6B8E23] px-2.5 py-1.5 text-xs font-medium text-[#6B8E23] bg-[#F4F7EE] hover:bg-[#E9F0DF] transition disabled:opacity-50 disabled:cursor-not-allowed">
+                                                    Cierre Rapido
                                                 </button>
                                                 <div x-show="!canResolve" class="text-[11px] text-gray-400">
                                                     Completa acciones y clasificación para habilitar resolución.
@@ -358,6 +365,51 @@
                                                             class="rounded-lg border border-[#6B8E23] px-3 py-2 text-xs text-[#6B8E23] hover:bg-[#F4F7EE] disabled:opacity-50"
                                                             @disabled(!$canManage)>
                                                             Completar ticket
+                                                        </button>
+                                                    </div>
+                                                </form>
+
+                                            </div>
+
+                                            <div x-show="tab === 'cierre_rapido'">
+                                                <div class="text-sm font-medium text-gray-700 mb-3">Cierre rápido</div>
+                                                <div class="text-xs text-gray-500 mb-3">
+                                                    Registra una acción, clasificación y resolución en un solo paso.
+                                                </div>
+                                                <form method="POST" action="{{ route('admin.tickets.quick-close', $ticket) }}" class="space-y-3">
+                                                    @csrf
+                                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                        <select name="action_type" required class="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700" @disabled(!$canManage)>
+                                                            <option value="">Tipo de acción</option>
+                                                            <option value="repuesto">Repuesto</option>
+                                                            <option value="instalacion">Instalación</option>
+                                                            <option value="compra">Compra</option>
+                                                            <option value="otro">Otro</option>
+                                                        </select>
+                                                        <select name="action_status" required class="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700" @disabled(!$canManage)>
+                                                            <option value="">Estado de acción</option>
+                                                            <option value="pendiente">Pendiente</option>
+                                                            <option value="en_progreso">En progreso</option>
+                                                            <option value="completado">Completado</option>
+                                                        </select>
+                                                        <textarea name="action_description" rows="2" placeholder="Descripción de la acción" required
+                                                            class="md:col-span-2 rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700" @disabled(!$canManage)></textarea>
+                                                    </div>
+                                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                                        <input type="text" name="categoria_interna" placeholder="Categoría interna" required
+                                                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700" @disabled(!$canManage)>
+                                                        <input type="text" name="problem_type" placeholder="Tipo de problema" required
+                                                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700" @disabled(!$canManage)>
+                                                        <input type="text" name="root_cause" placeholder="Causa raíz" required
+                                                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700" @disabled(!$canManage)>
+                                                    </div>
+                                                    <textarea name="resolution_text" rows="3" placeholder="Resolución final" required
+                                                        class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700" @disabled(!$canManage)></textarea>
+                                                    <div class="flex justify-end">
+                                                        <button type="submit"
+                                                            class="inline-flex items-center gap-1.5 px-3 py-2 rounded-full border border-[#6B8E23] text-sm font-medium text-[#6B8E23] bg-[#F4F7EE] hover:bg-[#E9F0DF] transition disabled:opacity-50"
+                                                            @disabled(!$canManage)>
+                                                            Cerrar Ticket
                                                         </button>
                                                     </div>
                                                 </form>

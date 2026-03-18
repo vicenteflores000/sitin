@@ -124,6 +124,8 @@ Route::middleware(['auth', 'active.user', 'force.password', 'admin'])
             ->name('admin.tickets.status');
         Route::post('/{ticket}/resolve', [AdminTicketController::class, 'resolve'])
             ->name('admin.tickets.resolve');
+        Route::post('/{ticket}/quick-close', [AdminTicketController::class, 'quickClose'])
+            ->name('admin.tickets.quick-close');
         Route::post('/{ticket}/parts', [AdminTicketController::class, 'addPart'])
             ->name('admin.tickets.parts');
         Route::post('/{ticket}/actions', [AdminTicketController::class, 'addAction'])
