@@ -4,9 +4,8 @@
     </div>
     <div class="w-full h-screen flex flex-col items-center px-4 bg-[#FAFAF7] overflow-hidden">
         <div class="w-full max-w-7xl py-8 flex flex-col" style="height: calc(100vh - 2rem);">
-            <div class="mb-6 text-center">
-                <img src="{{ asset('images/logo.png') }}" alt="Logo Tickets TI" class="mx-auto h-12" style="width: 200px; height: auto;">
-                <p class="text-gray-600">Dashboard de Administrador</p>
+            <div class="mb-3 text-center">
+                <img src="{{ asset('images/logo.png') }}" alt="Logo Tickets TI" class="mx-auto h-8" style="width: 130px; height: auto;">
             </div>
 
             <div class="mb-4 flex items-center justify-between gap-3">
