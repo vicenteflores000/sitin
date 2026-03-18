@@ -375,6 +375,7 @@
                                 throw new Error('No se pudo guardar');
                             }
 
+                            const ticketCard = form.closest('[data-ticket-id]');
                             if (form.dataset.ajaxType === 'assignment') {
                                 const ticketId = form.dataset.ticketId;
                                 const checked = Array.from(form.querySelectorAll('input[name="technician_ids[]"]:checked'));
@@ -400,7 +401,6 @@
                                 }
                             }
 
-                            const ticketCard = form.closest('[data-ticket-id]');
                             if (ticketCard && ticketCard.__x && ticketCard.__x.$data) {
                                 if (form.dataset.ajaxType === 'action') {
                                     const current = Number(ticketCard.__x.$data.actionsCount || 0);

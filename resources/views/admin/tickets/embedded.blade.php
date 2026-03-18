@@ -278,9 +278,7 @@
                                     </div>
                                     <div class="flex items-center justify-between mb-3">
                                         <div class="text-sm font-medium text-gray-700">Acciones registradas</div>
-                                        @unless($canManage)
-                                            <div class="text-xs text-gray-400">Solo el técnico asignado puede editar.</div>
-                                        @endunless
+                                        <div x-show="!canManage" class="text-xs text-gray-400">Solo el técnico asignado puede editar.</div>
                                     </div>
                                     <div class="mb-3 text-xs text-gray-500">
                                         Registra lo que necesitas hacer: repuestos, instalaciones, compras u otras tareas.
@@ -346,9 +344,7 @@
                                     </div>
                                     <div class="flex items-center justify-between mb-3">
                                         <div class="text-sm font-medium text-gray-700">Clasificación técnica</div>
-                                        @unless($canManage)
-                                            <div class="text-xs text-gray-400">Solo el técnico asignado puede editar.</div>
-                                        @endunless
+                                        <div x-show="!canManage" class="text-xs text-gray-400">Solo el técnico asignado puede editar.</div>
                                     </div>
 
                                                 <form method="POST" action="{{ route('admin.tickets.classification', $ticket) }}" class="space-y-3" data-ajax="true" data-ajax-type="classification" data-ticket-id="{{ $ticket->id }}">
@@ -377,16 +373,12 @@
                                     <div x-show="!hasAssignment" class="mb-4 rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3 text-xs text-yellow-800">
                                         Asigna el ticket a un técnico para completar la resolución.
                                     </div>
-                                    @if($actionsCount === 0)
-                                        <div class="mb-4 rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3 text-xs text-yellow-800">
-                                            Registra al menos una acción antes de completar la resolución.
-                                        </div>
-                                    @endif
-                                    @if(! $classificationComplete)
-                                        <div class="mb-4 rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3 text-xs text-yellow-800">
-                                            Completa la clasificación técnica antes de cerrar el ticket.
-                                        </div>
-                                    @endif
+                                    <div x-show="actionsCount === 0" class="mb-4 rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3 text-xs text-yellow-800">
+                                        Registra al menos una acción antes de completar la resolución.
+                                    </div>
+                                    <div x-show="!classificationComplete" class="mb-4 rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3 text-xs text-yellow-800">
+                                        Completa la clasificación técnica antes de cerrar el ticket.
+                                    </div>
                                                 <form method="POST" action="{{ route('admin.tickets.resolve', $ticket) }}" class="space-y-3" data-ajax="true" data-ajax-type="resolution" data-ticket-id="{{ $ticket->id }}">
                                                     @csrf
                                                     <textarea name="resolution_text" rows="4" placeholder="Resumen de resolución" required
