@@ -56,7 +56,7 @@
 
             <div class="bg-white rounded-xl shadow-xl border border-gray-200 p-6 flex flex-col flex-1 overflow-hidden">
                 <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
-                    <form action="{{ route('dashboard') }}">
+                    <form action="{{ route('admin.dashboard') }}">
                         <button
                             class="rounded-xl border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                             type="submit">

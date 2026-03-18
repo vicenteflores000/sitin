@@ -18,7 +18,7 @@
 
                 <div class="flex items-center justify-between mb-4 gap-3">
                     <div class="flex w-full items-center gap-3">
-                        <form action="{{ route('dashboard') }}">
+                        <form action="{{ route('admin.dashboard') }}">
                             <button
                                 class="mb-3 rounded-xl border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                                 type="submit">

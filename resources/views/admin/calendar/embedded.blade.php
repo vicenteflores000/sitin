@@ -71,6 +71,11 @@
             border-color: #DC2626;
         }
 
+        .fc .fc-event.event-readonly {
+            opacity: 0.6;
+            cursor: default;
+        }
+
         .fc .fc-event .fc-event-time {
             font-weight: 600;
         }
@@ -419,20 +424,37 @@
                 slotMinTime: '07:00:00',
                 slotMaxTime: '20:00:00',
                 nowIndicator: true,
-                events: '{{ route('admin.calendar.events') }}',
+                events: '{{ route('admin.calendar.events') }}?scope=all',
+                eventAllow: (dropInfo, draggedEvent) => {
+                    return draggedEvent?.extendedProps?.can_edit ?? true;
+                },
                 select: (info) => {
                     openModal(toLocalInput(info.start), toLocalInput(info.end));
                 },
                 eventClick: (info) => {
+                    if (!info.event.extendedProps?.can_edit) {
+                        if (window.showToast) {
+                            window.showToast('info', 'Solo puedes editar tus propios eventos.');
+                        }
+                        return;
+                    }
                     openEditModal(info.event);
                 },
                 eventDrop: async (info) => {
+                    if (!info.event.extendedProps?.can_edit) {
+                        info.revert();
+                        return;
+                    }
                     const ok = await updateEvent(info.event);
                     if (!ok) {
                         info.revert();
                     }
                 },
                 eventResize: async (info) => {
+                    if (!info.event.extendedProps?.can_edit) {
+                        info.revert();
+                        return;
+                    }
                     const ok = await updateEvent(info.event);
                     if (!ok) {
                         info.revert();

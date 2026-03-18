@@ -25,14 +25,19 @@ class AdminCalendarController extends Controller
         return view('admin.calendar.index', compact('tickets'));
     }
 
-    public function events(): JsonResponse
+    public function events(Request $request): JsonResponse
     {
-        $events = TicketSchedule::with('ticket.locacion.padre')
-            ->orderBy('start_at')
-            ->get()
-            ->map(function (TicketSchedule $schedule) {
-                return $this->buildEvent($schedule);
-            });
+        $query = TicketSchedule::with('ticket.locacion.padre')
+            ->orderBy('start_at');
+
+        $scope = $request->query('scope');
+        if ($scope !== 'all') {
+            $query->where('technician_id', auth()->id());
+        }
+
+        $events = $query->get()->map(function (TicketSchedule $schedule) {
+            return $this->buildEvent($schedule);
+        });
 
         return response()->json($events->values());
     }
@@ -132,19 +137,26 @@ class AdminCalendarController extends Controller
         $synced = $schedule->outlook_status === 'synced';
         $className = $synced ? 'event-synced' : 'event-error';
         $domainKeys = $this->resolveDomainKeys($ticket);
+        $canEdit = $schedule->technician_id === auth()->id();
+        $classNames = [$className];
+        if (! $canEdit) {
+            $classNames[] = 'event-readonly';
+        }
 
         return [
             'id' => (string) $schedule->id,
             'title' => "Ticket #{$ticket->id} · {$ticket->categoria}",
             'start' => $schedule->start_at->toIso8601String(),
             'end' => $schedule->end_at->toIso8601String(),
-            'classNames' => [$className],
+            'classNames' => $classNames,
+            'editable' => $canEdit,
             'extendedProps' => [
                 'ticket_id' => $ticket->id,
                 'location' => $location,
                 'user' => $ticket->usuario_mail,
                 'modality' => $schedule->modality,
                 'domain_keys' => $domainKeys,
+                'can_edit' => $canEdit,
             ],
         ];
     }
