@@ -22,6 +22,14 @@ class TicketActionLogged extends Mailable
 
     public function build()
     {
+        $this->ticket->loadMissing('currentAssignments.technician');
+        $assignedNames = $this->ticket->currentAssignments
+            ->pluck('technician.name')
+            ->filter()
+            ->unique()
+            ->values()
+            ->join(', ');
+
         $subject = "Nueva acción en Ticket #{$this->ticket->display_id}";
 
         return $this->subject($subject)
@@ -29,6 +37,7 @@ class TicketActionLogged extends Mailable
                 'logoUrl' => asset('images/logo.png'),
                 'technician' => $this->technician,
                 'action' => $this->action,
+                'assignedNames' => $assignedNames,
             ]);
     }
 }

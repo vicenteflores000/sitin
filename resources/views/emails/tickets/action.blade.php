@@ -25,12 +25,16 @@
                     </tr>
                     <tr>
                         <td style="font-size:14px; color:#4b5563; padding-bottom:16px;">
-                            El técnico <strong>{{ $technician->name }}</strong> registró una acción en tu ticket.
+                            El equipo técnico asignado registró una acción en tu ticket.
                         </td>
                     </tr>
                     <tr>
                         <td>
                             <table style="border-collapse: collapse; width: 100%;">
+                                <tr>
+                                    <td style="padding: 6px 0; font-weight: bold; width: 140px;">Equipo técnico</td>
+                                    <td style="padding: 6px 0;">{{ $assignedNames ?: 'SITIN' }}</td>
+                                </tr>
                                 <tr>
                                     <td style="padding: 6px 0; font-weight: bold; width: 140px;">Tipo</td>
                                     <td style="padding: 6px 0;">{{ ucfirst($action->action_type) }}</td>

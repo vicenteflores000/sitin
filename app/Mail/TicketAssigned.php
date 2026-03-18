@@ -20,12 +20,20 @@ class TicketAssigned extends Mailable
 
     public function build()
     {
-        $subject = "Ticket Asignado a {$this->technician->name}";
+        $this->ticket->loadMissing('currentAssignments.technician');
+        $assignedNames = $this->ticket->currentAssignments
+            ->pluck('technician.name')
+            ->filter()
+            ->unique()
+            ->values()
+            ->join(', ');
+
+        $subject = "Ticket #{$this->ticket->display_id} asignado al equipo técnico";
 
         return $this->subject($subject)
             ->view('emails.tickets.assigned', [
                 'logoUrl' => asset('images/logo.png'),
-                'technician' => $this->technician,
+                'assignedNames' => $assignedNames,
             ]);
     }
 }

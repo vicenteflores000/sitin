@@ -249,11 +249,11 @@
                 const applyTicketFilter = (domainKey, techId, statusKey) => {
                     ticketCards.forEach((card) => {
                         const keys = parseKeys(card.dataset.domainKeys || '');
-                        const tech = card.dataset.technicianId || '';
+                        const techIds = parseKeys(card.dataset.technicianIds || '');
                         const status = card.dataset.statusKey || '';
                         const showDomain = !domainKey || keys.includes(domainKey);
                         const showTech = !techId
-                            || (techId === 'unassigned' ? tech === '' : tech === String(techId));
+                            || (techId === 'unassigned' ? techIds.length === 0 : techIds.includes(String(techId)));
                         const showStatus = !statusKey || status === statusKey;
                         const show = showDomain && showTech && showStatus;
                         card.classList.toggle('hidden', !show);

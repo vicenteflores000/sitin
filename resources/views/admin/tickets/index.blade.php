@@ -31,13 +31,16 @@
                                 : $locacionPadre;
                         @endphp
                         @php
-                            $hasAssignment = (bool) $ticket->currentAssignment;
-                            $canManage = $hasAssignment && $ticket->currentAssignment->technician_id === auth()->id();
                             $classificationComplete = ($ticket->categoria_interna && $ticket->problem_type && $ticket->root_cause);
                             $actionsCount = $ticket->actions->count();
+                            $assignedTechs = $ticket->currentAssignments ?? collect();
+                            $assignedIds = $assignedTechs->pluck('technician_id')->all();
+                            $assignedNames = $assignedTechs->pluck('technician.name')->filter()->join(', ');
+                            $hasAssignment = $assignedTechs->isNotEmpty();
+                            $canManage = $assignedTechs->contains('technician_id', auth()->id());
                             $isResolved = in_array($status, ['resuelto', 'cerrado'], true);
                         @endphp
-                        <div x-data="{ open: false, tab: 'antecedentes', canResolve: {{ ($classificationComplete && $actionsCount > 0 && $canManage) ? 'true' : 'false' }}, showReassign: false }" class="group border rounded-lg bg-gray-50 cursor-pointer {{ $isResolved ? 'px-3 py-2 text-[11px] text-gray-500' : 'p-4' }}" @click="open = true" role="button" tabindex="0">
+                        <div x-data="{ open: false, tab: 'antecedentes', canResolve: {{ ($classificationComplete && $actionsCount > 0 && $canManage) ? 'true' : 'false' }} }" class="group border rounded-lg bg-gray-50 cursor-pointer {{ $isResolved ? 'px-3 py-2 text-[11px] text-gray-500' : 'p-4' }}" @click="open = true" role="button" tabindex="0">
                             <div class="flex items-start justify-between gap-4">
                                 <div>
                                     @php
@@ -53,14 +56,14 @@
                                     @endif
                                 </div>
 
-                                <div class="text-xs text-gray-500 text-right">
-                                    <div>Estado: <span class="{{ $isResolved ? 'font-medium text-gray-500' : 'font-medium text-gray-700' }}">{{ $status }}</span></div>
-                                    @if(!$isResolved)
-                                        <div>Asignado: {{ $ticket->currentAssignment?->technician?->name ?? '—' }}</div>
+                                    <div class="text-xs text-gray-500 text-right">
+                                        <div>Estado: <span class="{{ $isResolved ? 'font-medium text-gray-500' : 'font-medium text-gray-700' }}">{{ $status }}</span></div>
+                                        @if(!$isResolved)
+                                        <div>Asignado: {{ $assignedNames ?: '—' }}</div>
                                         <div>{{ $ticket->created_at->format('d-m-Y H:i') }}</div>
-                                    @endif
+                                        @endif
+                                    </div>
                                 </div>
-                            </div>
 
                             <div class="{{ $isResolved ? 'mt-1' : 'mt-3' }} text-[10px] text-gray-400 opacity-0 group-hover:opacity-100 transition">
                                 Clic para ver las acciones
@@ -71,50 +74,47 @@
                                     <div class="flex flex-col gap-3 px-6 pt-6 pb-4 border-b border-gray-100">
                                         <div class="flex items-center justify-between">
                                             <h3 class="text-lg font-semibold">Gestionar ticket #{{ $ticket->display_id }}</h3>
-                                            <button type="button" @click="open = false" class="text-gray-500 hover:text-gray-700">✕</button>
+                                            <button type="button" @click.stop="open = false" class="text-gray-500 hover:text-gray-700">✕</button>
                                         </div>
                                         <div class="flex flex-wrap items-center gap-3 text-sm text-gray-600">
-                                            @if($ticket->currentAssignment)
-                                                <div class="flex flex-wrap items-center gap-2">
-                                                    <div class="rounded-full bg-gray-100 px-3 py-1 text-xs text-gray-700">
-                                                        Asignado a: <span class="font-medium">{{ $ticket->currentAssignment?->technician?->name ?? '—' }}</span>
-                                                    </div>
-                                                    <button type="button"
-                                                        @click="showReassign = !showReassign"
-                                                        class="text-xs text-gray-500 hover:text-gray-700 underline">
-                                                        Reasignar
-                                                    </button>
+                                            <div class="flex flex-wrap items-center gap-2">
+                                                <div class="rounded-full bg-gray-100 px-3 py-1 text-xs text-gray-700">
+                                                    Técnicos: <span class="font-medium">{{ $assignedNames ?: '—' }}</span>
                                                 </div>
-                                                <form x-show="showReassign" method="POST" action="{{ route('admin.tickets.assign-user', $ticket) }}" class="flex flex-wrap items-center gap-2">
-                                                    @csrf
-                                                    <span class="text-xs text-gray-500">Asignar a:</span>
-                                                    <select name="technician_id" required class="rounded-lg border border-gray-300 px-3 py-2 text-xs text-gray-700">
-                                                        <option value="">Selecciona técnico</option>
-                                                        @foreach($admins as $adminUser)
-                                                            <option value="{{ $adminUser->id }}">{{ $adminUser->name }}</option>
-                                                        @endforeach
-                                                    </select>
-                                                    <button type="submit"
-                                                        class="rounded-lg border border-[#6B8E23] px-3 py-2 text-xs text-[#6B8E23] hover:bg-[#F4F7EE]">
-                                                        Asignar
+                                                <div x-data="{ openAssign: false }" class="relative">
+                                                    <button type="button"
+                                                        @click.stop="openAssign = !openAssign"
+                                                        class="text-xs text-gray-500 hover:text-gray-700 underline">
+                                                        Editar técnicos
                                                     </button>
-                                                </form>
-                                            @else
-                                                <form method="POST" action="{{ route('admin.tickets.assign-user', $ticket) }}" class="flex flex-wrap items-center gap-2">
-                                                    @csrf
-                                                    <span class="text-xs text-gray-500">Asignar a:</span>
-                                                    <select name="technician_id" required class="rounded-lg border border-gray-300 px-3 py-2 text-xs text-gray-700">
-                                                        <option value="">Selecciona técnico</option>
-                                                        @foreach($admins as $adminUser)
-                                                            <option value="{{ $adminUser->id }}">{{ $adminUser->name }}</option>
-                                                        @endforeach
-                                                    </select>
-                                                    <button type="submit"
-                                                        class="rounded-lg border border-[#6B8E23] px-3 py-2 text-xs text-[#6B8E23] hover:bg-[#F4F7EE]">
-                                                        Asignar
-                                                    </button>
-                                                </form>
-                                            @endif
+                                                    <div
+                                                        x-show="openAssign"
+                                                        x-transition
+                                                        @click.outside="openAssign = false"
+                                                        class="absolute left-0 mt-2 w-72 max-w-[80vw] rounded-xl border border-gray-200 bg-white p-3 shadow-sm z-50">
+                                                        <form method="POST" action="{{ route('admin.tickets.assign-multiple', $ticket) }}" class="space-y-3" @click.stop>
+                                                            @csrf
+                                                            <div class="max-h-52 overflow-y-auto pr-1 space-y-2">
+                                                                @foreach($admins as $adminUser)
+                                                                    <label class="flex items-center gap-2 text-xs text-gray-600">
+                                                                        <input type="checkbox" name="technician_ids[]"
+                                                                            value="{{ $adminUser->id }}"
+                                                                            @checked(in_array($adminUser->id, $assignedIds))
+                                                                            class="rounded border-gray-300 text-[#6B8E23]">
+                                                                        <span>{{ $adminUser->name }}</span>
+                                                                    </label>
+                                                                @endforeach
+                                                            </div>
+                                                            <div class="flex justify-end">
+                                                                <button type="submit"
+                                                                    class="rounded-lg border border-[#6B8E23] px-3 py-2 text-xs text-[#6B8E23] hover:bg-[#F4F7EE]">
+                                                                    Guardar
+                                                                </button>
+                                                            </div>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
 
@@ -219,7 +219,7 @@
                                                     </div>
                                                     <div>
                                                         <div class="text-xs text-gray-400">Asignado</div>
-                                                        <div>{{ $ticket->currentAssignment?->technician?->name ?? '—' }}</div>
+                                                        <div>{{ $assignedNames ?: '—' }}</div>
                                                     </div>
                                                     <div>
                                                         <div class="text-xs text-gray-400">Creado</div>

@@ -103,6 +103,13 @@ class Ticket extends Model
             ->latestOfMany('assigned_at');
     }
 
+    public function currentAssignments(): HasMany
+    {
+        return $this->hasMany(TicketAssignment::class)
+            ->whereNull('unassigned_at')
+            ->orderByDesc('assigned_at');
+    }
+
     public function assignments(): HasMany
     {
         return $this->hasMany(TicketAssignment::class);

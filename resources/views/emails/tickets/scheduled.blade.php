@@ -32,7 +32,7 @@
                             @elseif(($mode ?? 'created') === 'deleted')
                                 El bloque agendado para este ticket fue cancelado.
                             @else
-                                El técnico asignado revisará tu ticket en el día y horario indicado.
+                                El equipo técnico asignado revisará tu ticket en el día y horario indicado.
                             @endif
                         </td>
                     </tr>
@@ -40,8 +40,8 @@
                         <td>
                             <table style="border-collapse: collapse; width: 100%;">
                                 <tr>
-                                    <td style="padding: 6px 0; font-weight: bold; width: 140px;">Técnico</td>
-                                    <td style="padding: 6px 0;">{{ $ticket->currentAssignment?->technician?->name ?? '—' }}</td>
+                                    <td style="padding: 6px 0; font-weight: bold; width: 140px;">Equipo técnico</td>
+                                    <td style="padding: 6px 0;">{{ $assignedNames ?: 'SITIN' }}</td>
                                 </tr>
                                 <tr>
                                     <td style="padding: 6px 0; font-weight: bold;">Fecha y hora</td>

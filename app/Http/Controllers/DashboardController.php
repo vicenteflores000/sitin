@@ -18,8 +18,8 @@ class DashboardController extends Controller
 
     public function admin()
     {
-        $calendarTickets = Ticket::with('locacion.padre', 'currentAssignment.technician', 'requester')
-            ->whereHas('currentAssignment', function ($query) {
+        $calendarTickets = Ticket::with('locacion.padre', 'currentAssignment.technician', 'currentAssignments.technician', 'requester')
+            ->whereHas('currentAssignments', function ($query) {
                 $query->where('technician_id', auth()->id());
             })
             ->orderByDesc('created_at')
@@ -30,6 +30,7 @@ class DashboardController extends Controller
             'requester',
             'latestStatusEvent',
             'currentAssignment.technician',
+            'currentAssignments.technician',
             'resolution',
             'parts',
             'actions.creator',
@@ -146,8 +147,11 @@ class DashboardController extends Controller
                 }
             }
 
-            $technicianId = $ticket->currentAssignment?->technician_id;
-            if ($technicianId && isset($techCards[$technicianId])) {
+            $assignedIds = $ticket->currentAssignments?->pluck('technician_id')->filter()->values() ?? collect();
+            foreach ($assignedIds as $technicianId) {
+                if (! isset($techCards[$technicianId])) {
+                    continue;
+                }
                 if (in_array($status, $assignedStatuses, true)) {
                     $techCards[$technicianId]['assigned']++;
                 }

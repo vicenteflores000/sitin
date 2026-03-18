@@ -21,6 +21,14 @@ class TicketScheduled extends Mailable
 
     public function build()
     {
+        $this->ticket->loadMissing('currentAssignments.technician');
+        $assignedNames = $this->ticket->currentAssignments
+            ->pluck('technician.name')
+            ->filter()
+            ->unique()
+            ->values()
+            ->join(', ');
+
         $subject = match ($this->mode) {
             'updated' => "Ticket #{$this->ticket->display_id} reprogramado",
             'deleted' => "Ticket #{$this->ticket->display_id} cancelado",
@@ -31,6 +39,7 @@ class TicketScheduled extends Mailable
             ->view('emails.tickets.scheduled', [
                 'logoUrl' => asset('images/logo.png'),
                 'mode' => $this->mode,
+                'assignedNames' => $assignedNames,
             ]);
     }
 }

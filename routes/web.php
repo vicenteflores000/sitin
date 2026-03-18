@@ -118,6 +118,8 @@ Route::middleware(['auth', 'active.user', 'force.password', 'admin'])
             ->name('admin.tickets.assign');
         Route::post('/{ticket}/assign-user', [AdminTicketController::class, 'assignUser'])
             ->name('admin.tickets.assign-user');
+        Route::post('/{ticket}/assign-multiple', [AdminTicketController::class, 'syncAssignments'])
+            ->name('admin.tickets.assign-multiple');
         Route::post('/{ticket}/status', [AdminTicketController::class, 'updateStatus'])
             ->name('admin.tickets.status');
         Route::post('/{ticket}/resolve', [AdminTicketController::class, 'resolve'])

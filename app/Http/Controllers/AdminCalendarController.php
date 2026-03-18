@@ -15,8 +15,8 @@ class AdminCalendarController extends Controller
 {
     public function index()
     {
-        $tickets = Ticket::with('locacion.padre', 'currentAssignment.technician', 'requester')
-            ->whereHas('currentAssignment', function ($query) {
+        $tickets = Ticket::with('locacion.padre', 'currentAssignment.technician', 'currentAssignments.technician', 'requester')
+            ->whereHas('currentAssignments', function ($query) {
                 $query->where('technician_id', auth()->id());
             })
             ->orderByDesc('created_at')
@@ -51,8 +51,8 @@ class AdminCalendarController extends Controller
             'modality' => 'required|in:remota,terreno',
         ]);
 
-        $ticket = Ticket::with('currentAssignment')->findOrFail($data['ticket_id']);
-        if (! $ticket->currentAssignment || $ticket->currentAssignment->technician_id !== auth()->id()) {
+        $ticket = Ticket::with('currentAssignments')->findOrFail($data['ticket_id']);
+        if (! $ticket->currentAssignments->contains('technician_id', auth()->id())) {
             return response()->json(['message' => 'No puedes agendar un ticket no asignado.'], 403);
         }
 

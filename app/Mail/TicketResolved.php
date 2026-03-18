@@ -22,6 +22,14 @@ class TicketResolved extends Mailable
 
     public function build()
     {
+        $this->ticket->loadMissing('currentAssignments.technician');
+        $assignedNames = $this->ticket->currentAssignments
+            ->pluck('technician.name')
+            ->filter()
+            ->unique()
+            ->values()
+            ->join(', ');
+
         $subject = "Ticket #{$this->ticket->display_id} resuelto";
 
         return $this->subject($subject)
@@ -29,6 +37,7 @@ class TicketResolved extends Mailable
                 'logoUrl' => asset('images/logo.png'),
                 'technician' => $this->technician,
                 'resolution' => $this->resolution,
+                'assignedNames' => $assignedNames,
             ]);
     }
 }

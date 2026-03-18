@@ -25,7 +25,7 @@
                     </tr>
                     <tr>
                         <td style="font-size:14px; color:#4b5563; padding-bottom:16px;">
-                            El ticket fue asignado a <strong>{{ $technician->name }}</strong> ({{ $technician->email }}).
+                            El ticket fue asignado al equipo técnico <strong>{{ $assignedNames ?: 'SITIN' }}</strong>.
                         </td>
                     </tr>
                     <tr>
