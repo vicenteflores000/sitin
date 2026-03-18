@@ -156,6 +156,15 @@ class DashboardController extends Controller
             }
         }
 
+        $techCards = array_values($techCards);
+        usort($techCards, function ($a, $b) {
+            $byAssigned = ($b['assigned'] ?? 0) <=> ($a['assigned'] ?? 0);
+            if ($byAssigned !== 0) {
+                return $byAssigned;
+            }
+            return ($b['resolved'] ?? 0) <=> ($a['resolved'] ?? 0);
+        });
+
         return view('dashboard-admin', compact(
             'calendarTickets',
             'adminTickets',
