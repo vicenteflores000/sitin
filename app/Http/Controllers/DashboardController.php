@@ -78,6 +78,15 @@ class DashboardController extends Controller
             'resuelto' => 0,
         ];
 
+        $techCards = [];
+        foreach ($admins as $adminUser) {
+            $techCards[$adminUser->id] = [
+                'name' => $adminUser->name,
+                'assigned' => 0,
+                'resolved' => 0,
+            ];
+        }
+
         $newStatuses = ['nuevo', 'recibido'];
         $assignedStatuses = ['asignado', 'en_progreso', 'en_proceso', 'standby', 'en_espera'];
         $resolvedStatuses = ['resuelto', 'cerrado'];
@@ -135,6 +144,16 @@ class DashboardController extends Controller
                     $domainStats[$key]['resuelto']++;
                 }
             }
+
+            $technicianId = $ticket->currentAssignment?->technician_id;
+            if ($technicianId && isset($techCards[$technicianId])) {
+                if (in_array($status, $assignedStatuses, true)) {
+                    $techCards[$technicianId]['assigned']++;
+                }
+                if (in_array($status, $resolvedStatuses, true)) {
+                    $techCards[$technicianId]['resolved']++;
+                }
+            }
         }
 
         return view('dashboard-admin', compact(
@@ -143,7 +162,8 @@ class DashboardController extends Controller
             'admins',
             'domainCards',
             'domainStats',
-            'totalStats'
+            'totalStats',
+            'techCards'
         ));
     }
 
