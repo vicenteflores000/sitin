@@ -40,7 +40,10 @@
                         <div x-data="{ open: false, tab: 'antecedentes', canResolve: {{ ($classificationComplete && $actionsCount > 0 && $canManage) ? 'true' : 'false' }}, showReassign: false }" class="group border rounded-lg bg-gray-50 cursor-pointer {{ $isResolved ? 'px-3 py-2 text-[11px] text-gray-500' : 'p-4' }}" @click="open = true" role="button" tabindex="0">
                             <div class="flex items-start justify-between gap-4">
                                 <div>
-                                    <div class="{{ $isResolved ? 'font-medium text-gray-500' : 'font-medium text-gray-800' }}">#{{ $ticket->display_id }} · {{ $ticket->categoria }}</div>
+                                    @php
+                                        $requesterName = $ticket->usuario ?: ($ticket->requester?->name ?? 'Sin nombre');
+                                    @endphp
+                                    <div class="{{ $isResolved ? 'font-medium text-gray-500' : 'font-medium text-gray-800' }}">#{{ $ticket->display_id }} · {{ $requesterName }}</div>
                                     @if($isResolved)
                                         <div class="text-[11px] text-gray-500">{{ $ticket->usuario_mail }}</div>
                                     @else

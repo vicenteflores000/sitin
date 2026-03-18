@@ -35,8 +35,11 @@
                 tabindex="0">
                 <div class="flex items-start justify-between gap-4">
                     <div>
+                        @php
+                            $requesterName = $ticket->usuario ?: ($ticket->requester?->name ?? 'Sin nombre');
+                        @endphp
                         <div class="{{ $isResolved ? 'font-medium text-gray-500' : 'font-medium text-gray-800' }}">
-                            #{{ $ticket->display_id }} · {{ $ticket->categoria }}
+                            #{{ $ticket->display_id }} · {{ $requesterName }}
                         </div>
                         @if($isResolved)
                             <div class="text-[11px] text-gray-500">
