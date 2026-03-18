@@ -298,13 +298,24 @@ class AdminTicketController extends Controller
 
     protected function sendAssignmentNotification(Ticket $ticket): void
     {
-        $technician = $ticket->currentAssignment?->technician;
+        $ticket->loadMissing('currentAssignments.technician', 'currentAssignment.technician');
+        $emails = $ticket->currentAssignments
+            ->pluck('technician.email')
+            ->filter()
+            ->unique()
+            ->values();
+        if ($emails->isEmpty()) {
+            return;
+        }
+
+        $technician = $ticket->currentAssignment?->technician
+            ?? $ticket->currentAssignments->first()?->technician;
         if (! $technician) {
             return;
         }
 
         try {
-            Mail::to('informatica@mdonihue.cl')
+            Mail::to($emails->all())
                 ->send(new TicketAssigned($ticket, $technician));
         } catch (\Throwable $exception) {
             Log::warning('No se pudo enviar correo de asignación de ticket', [
