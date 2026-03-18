@@ -1,4 +1,4 @@
-<div class="bg-white rounded-xl shadow-xl border border-gray-200 p-6 flex flex-col h-full" x-data="{ showResolved: false, query: '' }">
+<div id="admin-ticket-manager" class="bg-white rounded-xl shadow-xl border border-gray-200 p-6 flex flex-col h-full" x-data="{ showResolved: false, query: '' }">
     <div class="flex items-center justify-between mb-4 gap-3">
         <div class="flex items-center gap-2" x-data="{ openSearch: false }">
             <div
@@ -65,6 +65,7 @@
                 x-show="(showResolved || !{{ $isResolved ? 'true' : 'false' }}) && (!query || ($el.dataset.search && $el.dataset.search.includes(query.toLowerCase())))"
                 x-cloak
                 class="group border rounded-lg bg-gray-50 cursor-pointer {{ $isResolved ? 'px-3 py-2 text-[11px] text-gray-500' : 'p-4' }}"
+                data-ticket-id="{{ $ticket->id }}"
                 data-domain-keys="{{ $domainKeysAttr }}"
                 data-technician-ids="{{ $assignedIdsAttr }}"
                 data-status-key="{{ $statusKey }}"
@@ -94,7 +95,7 @@
                     <div class="text-xs text-gray-500 text-right">
                         <div>Estado: <span class="{{ $isResolved ? 'font-medium text-gray-500' : 'font-medium text-gray-700' }}">{{ $status }}</span></div>
                         @if(!$isResolved)
-                            <div>Asignado: {{ $assignedNames ?: '—' }}</div>
+                            <div>Asignado: <span data-assigned-ticket="{{ $ticket->id }}">{{ $assignedNames ?: '—' }}</span></div>
                             <div>{{ $ticket->created_at->format('d-m-Y H:i') }}</div>
                         @endif
                     </div>
@@ -114,7 +115,7 @@
                         <div class="flex flex-wrap items-center gap-3 text-sm text-gray-600">
                             <div class="flex flex-wrap items-center gap-2">
                                 <div class="rounded-full bg-gray-100 px-3 py-1 text-xs text-gray-700">
-                                    Técnicos: <span class="font-medium">{{ $assignedNames ?: '—' }}</span>
+                                    Técnicos: <span class="font-medium" data-assigned-ticket="{{ $ticket->id }}">{{ $assignedNames ?: '—' }}</span>
                                 </div>
                                 <div x-data="{ openAssign: false }" class="relative">
                                     <button type="button"
@@ -127,7 +128,7 @@
                                         x-transition
                                         @click.outside="openAssign = false"
                                         class="absolute left-0 mt-2 w-72 max-w-[80vw] rounded-xl border border-gray-200 bg-white p-3 shadow-sm z-50">
-                                        <form method="POST" action="{{ route('admin.tickets.assign-multiple', $ticket) }}" class="space-y-3" @click.stop>
+                                        <form method="POST" action="{{ route('admin.tickets.assign-multiple', $ticket) }}" class="space-y-3" @click.stop data-ajax="true" data-ajax-type="assignment" data-ticket-id="{{ $ticket->id }}">
                                             @csrf
                                             <div class="max-h-52 overflow-y-auto pr-1 space-y-2">
                                                 @foreach($admins as $adminUser)
@@ -254,7 +255,7 @@
                                         </div>
                                         <div>
                                             <div class="text-xs text-gray-400">Asignado</div>
-                                            <div>{{ $assignedNames ?: '—' }}</div>
+                                            <div data-assigned-ticket="{{ $ticket->id }}">{{ $assignedNames ?: '—' }}</div>
                                         </div>
                                         <div>
                                             <div class="text-xs text-gray-400">Creado</div>
@@ -307,9 +308,9 @@
 
                                     <div class="mt-4 rounded-lg border border-gray-200 bg-gray-50 p-4">
                                         <div class="text-xs uppercase tracking-wide text-gray-400">Agregar acción</div>
-                                        <form method="POST" action="{{ route('admin.tickets.actions', $ticket) }}" class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
-                                            @csrf
-                                            <select name="action_type" required class="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700" @disabled(!$canManage)>
+                                                    <form method="POST" action="{{ route('admin.tickets.actions', $ticket) }}" class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3" data-ajax="true" data-ajax-type="action" data-ticket-id="{{ $ticket->id }}">
+                                                        @csrf
+                                                        <select name="action_type" required class="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700" @disabled(!$canManage)>
                                                 <option value="repuesto">Repuesto</option>
                                                 <option value="instalacion">Instalación</option>
                                                 <option value="compra">Compra</option>
@@ -346,10 +347,10 @@
                                         @endunless
                                     </div>
 
-                                    <form method="POST" action="{{ route('admin.tickets.classification', $ticket) }}" class="space-y-3">
-                                        @csrf
-                                        <input type="text" name="categoria_interna" placeholder="Categoría interna" required
-                                            value="{{ old('categoria_interna', $ticket->categoria_interna) }}"
+                                                <form method="POST" action="{{ route('admin.tickets.classification', $ticket) }}" class="space-y-3" data-ajax="true" data-ajax-type="classification" data-ticket-id="{{ $ticket->id }}">
+                                                    @csrf
+                                                    <input type="text" name="categoria_interna" placeholder="Categoría interna" required
+                                                        value="{{ old('categoria_interna', $ticket->categoria_interna) }}"
                                             class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700" @disabled(!$canManage)>
                                         <input type="text" name="problem_type" placeholder="Tipo de problema" required
                                             value="{{ old('problem_type', $ticket->problem_type) }}"
@@ -384,10 +385,10 @@
                                             Completa la clasificación técnica antes de cerrar el ticket.
                                         </div>
                                     @endif
-                                    <form method="POST" action="{{ route('admin.tickets.resolve', $ticket) }}" class="space-y-3">
-                                        @csrf
-                                        <textarea name="resolution_text" rows="4" placeholder="Resumen de resolución" required
-                                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700" @disabled(!$canManage)>{{ $ticket->resolution?->resolution_text }}</textarea>
+                                                <form method="POST" action="{{ route('admin.tickets.resolve', $ticket) }}" class="space-y-3" data-ajax="true" data-ajax-type="resolution" data-ticket-id="{{ $ticket->id }}">
+                                                    @csrf
+                                                    <textarea name="resolution_text" rows="4" placeholder="Resumen de resolución" required
+                                                        class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700" @disabled(!$canManage)>{{ $ticket->resolution?->resolution_text }}</textarea>
                                         <div class="flex justify-end">
                                             <button type="submit"
                                                 class="rounded-lg border border-[#6B8E23] px-3 py-2 text-xs text-[#6B8E23] hover:bg-[#F4F7EE] disabled:opacity-50"

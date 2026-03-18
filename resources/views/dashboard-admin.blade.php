@@ -340,6 +340,75 @@
                 });
 
                 applyFilter(null, null, null);
+
+                const manager = document.getElementById('admin-ticket-manager');
+                if (manager) {
+                    manager.addEventListener('submit', async (event) => {
+                        const form = event.target;
+                        if (!form || !form.matches('form[data-ajax="true"]')) {
+                            return;
+                        }
+                        event.preventDefault();
+                        if (form.dataset.submitting === 'true') {
+                            return;
+                        }
+                        form.dataset.submitting = 'true';
+
+                        const submitBtn = form.querySelector('button[type="submit"]');
+                        const originalLabel = submitBtn?.textContent;
+                        if (submitBtn) {
+                            submitBtn.disabled = true;
+                            submitBtn.textContent = 'Guardando...';
+                        }
+
+                        try {
+                            const response = await fetch(form.action, {
+                                method: (form.method || 'POST').toUpperCase(),
+                                body: new FormData(form),
+                                headers: {
+                                    'X-Requested-With': 'XMLHttpRequest',
+                                },
+                                credentials: 'same-origin',
+                            });
+
+                            if (!response.ok) {
+                                throw new Error('No se pudo guardar');
+                            }
+
+                            if (form.dataset.ajaxType === 'assignment') {
+                                const ticketId = form.dataset.ticketId;
+                                const checked = Array.from(form.querySelectorAll('input[name="technician_ids[]"]:checked'));
+                                const names = checked.map((input) => {
+                                    const label = input.closest('label');
+                                    return label ? label.textContent.trim() : '';
+                                }).filter(Boolean);
+                                const ids = checked.map((input) => String(input.value));
+                                const display = names.length ? names.join(', ') : '—';
+                                manager.querySelectorAll(`[data-assigned-ticket="${ticketId}"]`).forEach((el) => {
+                                    el.textContent = display;
+                                });
+                                const card = manager.querySelector(`[data-ticket-id="${ticketId}"]`);
+                                if (card) {
+                                    card.dataset.technicianIds = ids.join(',');
+                                }
+                            }
+
+                            if (window.showToast) {
+                                window.showToast('success', 'Cambios guardados');
+                            }
+                        } catch (error) {
+                            if (window.showToast) {
+                                window.showToast('error', 'No se pudo guardar. Intenta nuevamente.');
+                            }
+                        } finally {
+                            if (submitBtn) {
+                                submitBtn.disabled = false;
+                                submitBtn.textContent = originalLabel || 'Guardar';
+                            }
+                            delete form.dataset.submitting;
+                        }
+                    });
+                }
             });
         </script>
         <script>
