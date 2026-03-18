@@ -1,6 +1,25 @@
-<div class="bg-white rounded-xl shadow-xl border border-gray-200 p-6 flex flex-col h-full" x-data="{ showResolved: false }">
+<div class="bg-white rounded-xl shadow-xl border border-gray-200 p-6 flex flex-col h-full" x-data="{ showResolved: false, query: '' }">
     <div class="flex items-center justify-between mb-4 gap-3">
-        <h2 class="text-sm font-semibold text-gray-700">Gestor de tickets</h2>
+        <div class="flex items-center gap-2" x-data="{ openSearch: false }">
+            <div
+                class="flex items-center rounded-full bg-gray-100/90 text-gray-600 transition-all duration-200 overflow-hidden h-8 px-2"
+                :class="openSearch ? 'w-64 px-3' : 'w-8 px-2'"
+                @click="openSearch = true; $nextTick(() => $refs.searchInput?.focus())">
+                <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2"
+                    viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M21 21l-4.35-4.35m1.35-5.65a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <input
+                    x-ref="searchInput"
+                    type="text"
+                    x-model="query"
+                    @focus="openSearch = true"
+                    @blur="openSearch = !!query"
+                    :class="openSearch ? 'ml-2 w-full opacity-100' : 'w-0 opacity-0'"
+                    class="bg-transparent text-[11px] text-gray-700 border-0 outline-none ring-0 focus:ring-0 focus:border-transparent focus:outline-none focus-visible:outline-none shadow-none appearance-none transition-all duration-200" />
+            </div>
+        </div>
         <button type="button"
             class="text-xs text-gray-500 hover:text-gray-700 underline"
             @click="showResolved = !showResolved"
@@ -31,15 +50,25 @@
                 $domainKeysAttr = implode(',', $domainKeys);
                 $statusKey = $status;
                 $isResolved = in_array($status, ['resuelto', 'cerrado'], true);
+                $searchText = strtolower(trim(implode(' ', array_filter([
+                    $ticket->display_id,
+                    $ticket->usuario_mail,
+                    $ticket->usuario,
+                    $ticket->requester?->name,
+                    $locacionLabel,
+                    $ticket->descripcion,
+                    $status,
+                ]))));
             @endphp
             <div
                 x-data="{ open: false, tab: 'antecedentes', canResolve: {{ ($classificationComplete && $actionsCount > 0 && $canManage) ? 'true' : 'false' }} }"
-                x-show="showResolved || !{{ $isResolved ? 'true' : 'false' }}"
+                x-show="(showResolved || !{{ $isResolved ? 'true' : 'false' }}) && (!query || ($el.dataset.search && $el.dataset.search.includes(query.toLowerCase())))"
                 x-cloak
                 class="group border rounded-lg bg-gray-50 cursor-pointer {{ $isResolved ? 'px-3 py-2 text-[11px] text-gray-500' : 'p-4' }}"
                 data-domain-keys="{{ $domainKeysAttr }}"
                 data-technician-ids="{{ $assignedIdsAttr }}"
                 data-status-key="{{ $statusKey }}"
+                data-search="{{ $searchText }}"
                 @click="open = true"
                 role="button"
                 tabindex="0">
