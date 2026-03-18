@@ -1,6 +1,11 @@
-<div class="bg-white rounded-xl shadow-xl border border-gray-200 p-6 flex flex-col h-full">
+<div class="bg-white rounded-xl shadow-xl border border-gray-200 p-6 flex flex-col h-full" x-data="{ showResolved: false }">
     <div class="flex items-center justify-between mb-4 gap-3">
         <h2 class="text-sm font-semibold text-gray-700">Gestor de tickets</h2>
+        <button type="button"
+            class="text-xs text-gray-500 hover:text-gray-700 underline"
+            @click="showResolved = !showResolved"
+            x-text="showResolved ? 'ocultar resueltos' : 'ver resueltos'">
+        </button>
     </div>
 
     <div class="flex-1 overflow-y-auto">
@@ -29,6 +34,8 @@
             @endphp
             <div
                 x-data="{ open: false, tab: 'antecedentes', canResolve: {{ ($classificationComplete && $actionsCount > 0 && $canManage) ? 'true' : 'false' }} }"
+                x-show="showResolved || !{{ $isResolved ? 'true' : 'false' }}"
+                x-cloak
                 class="group border rounded-lg bg-gray-50 cursor-pointer {{ $isResolved ? 'px-3 py-2 text-[11px] text-gray-500' : 'p-4' }}"
                 data-domain-keys="{{ $domainKeysAttr }}"
                 data-technician-ids="{{ $assignedIdsAttr }}"
