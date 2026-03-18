@@ -28,7 +28,6 @@ class AdminCalendarController extends Controller
     public function events(): JsonResponse
     {
         $events = TicketSchedule::with('ticket.locacion.padre')
-            ->where('technician_id', auth()->id())
             ->orderBy('start_at')
             ->get()
             ->map(function (TicketSchedule $schedule) {
