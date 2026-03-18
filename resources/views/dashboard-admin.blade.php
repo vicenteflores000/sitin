@@ -1,4 +1,7 @@
 <x-layouts.clean>
+    <div id="page-loader" class="fixed inset-0 z-50 flex items-center justify-center bg-[#FAFAF7] transition-opacity duration-200">
+        <div class="h-10 w-10 rounded-full border-4 border-gray-200 border-t-gray-500 animate-spin"></div>
+    </div>
     <div class="w-full h-screen flex flex-col items-center px-4 bg-[#FAFAF7] overflow-hidden">
         <div class="w-full max-w-7xl py-8 flex flex-col" style="height: calc(100vh - 2rem);">
             <div class="mb-6 text-center">
@@ -337,6 +340,16 @@
                 });
 
                 applyFilter(null, null, null);
+            });
+        </script>
+        <script>
+            window.addEventListener('load', () => {
+                const loader = document.getElementById('page-loader');
+                if (!loader) return;
+                loader.classList.add('opacity-0');
+                window.setTimeout(() => {
+                    loader.classList.add('hidden');
+                }, 200);
             });
         </script>
     @endpush
