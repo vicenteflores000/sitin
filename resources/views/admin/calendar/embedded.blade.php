@@ -399,6 +399,8 @@
             });
 
             let activeDomain = null;
+            let activeTech = null;
+            let activeStatus = null;
 
             const eventMatchesDomain = (event, domainKey) => {
                 if (!domainKey) {
@@ -406,6 +408,25 @@
                 }
                 const keys = event.extendedProps?.domain_keys || [];
                 return Array.isArray(keys) && keys.includes(domainKey);
+            };
+
+            const eventMatchesTechnician = (event, techId) => {
+                if (!techId) {
+                    return true;
+                }
+                const eventTech = event.extendedProps?.technician_id;
+                if (techId === 'unassigned') {
+                    return !eventTech;
+                }
+                return String(eventTech) === String(techId);
+            };
+
+            const eventMatchesStatus = (event, statusKey) => {
+                if (!statusKey) {
+                    return true;
+                }
+                const eventStatus = event.extendedProps?.status_key;
+                return String(eventStatus) === String(statusKey);
             };
 
             const calendar = new window.FullCalendar.Calendar(calendarEl, {
@@ -465,7 +486,10 @@
                     if (location || user) {
                         info.el.title = `${location || ''}${location && user ? ' · ' : ''}${user || ''}`;
                     }
-                    if (activeDomain && !eventMatchesDomain(info.event, activeDomain)) {
+                    const show = eventMatchesDomain(info.event, activeDomain)
+                        && eventMatchesTechnician(info.event, activeTech)
+                        && eventMatchesStatus(info.event, activeStatus);
+                    if (!show) {
                         info.el.style.display = 'none';
                     }
                 },
@@ -473,10 +497,15 @@
 
             calendar.render();
 
-            const applyDomainFilter = (domainKey) => {
+            const applyDomainFilter = (domainKey, techId, statusKey) => {
                 activeDomain = domainKey || null;
+                activeTech = techId || null;
+                activeStatus = statusKey || null;
                 calendar.getEvents().forEach((event) => {
-                    event.setProp('display', eventMatchesDomain(event, activeDomain) ? 'auto' : 'none');
+                    const show = eventMatchesDomain(event, activeDomain)
+                        && eventMatchesTechnician(event, activeTech)
+                        && eventMatchesStatus(event, activeStatus);
+                    event.setProp('display', show ? 'auto' : 'none');
                 });
             };
 
@@ -513,7 +542,7 @@
                                 event.setExtendedProp(key, value);
                             });
                         }
-                        applyDomainFilter(activeDomain);
+                        applyDomainFilter(activeDomain, activeTech, activeStatus);
                     }
                 }
 
@@ -560,7 +589,7 @@
                                     eventToUpdate.setExtendedProp(key, value);
                                 });
                             }
-                            applyDomainFilter(activeDomain);
+                            applyDomainFilter(activeDomain, activeTech, activeStatus);
                         } else {
                             calendar.refetchEvents();
                         }
@@ -599,7 +628,7 @@
                 const createdEvent = await response.json().catch(() => null);
                 if (createdEvent && createdEvent.id) {
                     calendar.addEvent(createdEvent);
-                    applyDomainFilter(activeDomain);
+                    applyDomainFilter(activeDomain, activeTech, activeStatus);
                 } else {
                     calendar.refetchEvents();
                 }

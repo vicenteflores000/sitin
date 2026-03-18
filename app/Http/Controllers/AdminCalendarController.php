@@ -142,6 +142,7 @@ class AdminCalendarController extends Controller
         if (! $canEdit) {
             $classNames[] = 'event-readonly';
         }
+        $statusKey = $ticket?->latestStatusEvent?->to_status ?? 'nuevo';
 
         return [
             'id' => (string) $schedule->id,
@@ -157,6 +158,8 @@ class AdminCalendarController extends Controller
                 'modality' => $schedule->modality,
                 'domain_keys' => $domainKeys,
                 'can_edit' => $canEdit,
+                'technician_id' => $schedule->technician_id,
+                'status_key' => $statusKey,
             ],
         ];
     }

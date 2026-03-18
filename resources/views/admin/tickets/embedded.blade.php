@@ -20,12 +20,16 @@
                 $actionsCount = $ticket->actions->count();
                 $domainKeys = $ticket->domain_keys ?? [];
                 $domainKeysAttr = implode(',', $domainKeys);
+                $technicianId = $ticket->currentAssignment?->technician_id;
+                $statusKey = $status;
                 $isResolved = in_array($status, ['resuelto', 'cerrado'], true);
             @endphp
             <div
                 x-data="{ open: false, tab: 'antecedentes', canResolve: {{ ($classificationComplete && $actionsCount > 0 && $canManage) ? 'true' : 'false' }}, showReassign: false }"
                 class="group border rounded-lg bg-gray-50 cursor-pointer {{ $isResolved ? 'px-3 py-2 text-[11px] text-gray-500' : 'p-4' }}"
                 data-domain-keys="{{ $domainKeysAttr }}"
+                data-technician-id="{{ $technicianId ?? '' }}"
+                data-status-key="{{ $statusKey }}"
                 @click="open = true"
                 role="button"
                 tabindex="0">

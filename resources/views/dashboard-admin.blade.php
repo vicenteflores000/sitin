@@ -7,16 +7,73 @@
             </div>
 
             <div class="mb-4 flex items-center justify-between gap-3">
-                <div class="flex items-center flex-wrap gap-2">
-                    @foreach($domainCards as $key => $card)
-                        <button
-                            type="button"
-                            data-domain-filter="{{ $key }}"
-                            class="domain-chip inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold {{ $card['text'] }}"
-                            style="{{ $card['style'] }}">
-                            {{ $card['label'] }}
-                        </button>
-                    @endforeach
+                <div x-data="{ open: false }" class="relative">
+                    <button
+                        type="button"
+                        @click="open = !open"
+                        @click.outside="open = false"
+                        class="inline-flex items-center justify-center gap-2 rounded-xl border border-gray-300 px-4 py-2 text-sm text-gray-700 bg-white hover:bg-gray-50 transition">
+                        <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" stroke-width="2"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 5h18M6 12h12M10 19h4" />
+                        </svg>
+                        Filtros
+                        <svg class="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" stroke-width="2"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+                    <div
+                        x-show="open"
+                        x-transition
+                        class="absolute left-0 mt-2 w-max max-w-[90vw] bg-white border border-gray-200 rounded-xl shadow-sm z-50 p-4 space-y-3">
+                        <div>
+                            <div class="text-xs uppercase tracking-wide text-gray-500 mb-2">Dominio</div>
+                            <div class="flex flex-nowrap gap-2 overflow-x-auto">
+                                @foreach($domainCards as $key => $card)
+                                    <button
+                                        type="button"
+                                        data-domain-filter="{{ $key }}"
+                                        class="domain-chip inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold {{ $card['text'] }}"
+                                        style="{{ $card['style'] }}">
+                                        {{ $card['label'] }}
+                                    </button>
+                                @endforeach
+                            </div>
+                        </div>
+                        <div>
+                            <div class="text-xs uppercase tracking-wide text-gray-500 mb-2">Técnico</div>
+                            <div class="flex flex-nowrap gap-2 overflow-x-auto">
+                                <button
+                                    type="button"
+                                    data-tech-filter="unassigned"
+                                    class="tech-chip inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 transition">
+                                    Sin asignar
+                                </button>
+                                @foreach($admins as $adminUser)
+                                    <button
+                                        type="button"
+                                        data-tech-filter="{{ $adminUser->id }}"
+                                        class="tech-chip inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 transition">
+                                        {{ $adminUser->name }}
+                                    </button>
+                                @endforeach
+                            </div>
+                        </div>
+                        <div>
+                            <div class="text-xs uppercase tracking-wide text-gray-500 mb-2">Estado</div>
+                            <div class="flex flex-nowrap gap-2 overflow-x-auto">
+                                @foreach(['nuevo', 'asignado', 'resuelto'] as $state)
+                                    <button
+                                        type="button"
+                                        data-status-filter="{{ $state }}"
+                                        class="status-chip inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 transition">
+                                        {{ strtoupper(str_replace('_', ' ', $state)) }}
+                                    </button>
+                                @endforeach
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <div x-data="{ open: false }" class="relative">
                     <button
@@ -121,9 +178,13 @@
     @push('scripts')
         <script>
             document.addEventListener('DOMContentLoaded', () => {
-                const chips = Array.from(document.querySelectorAll('[data-domain-filter]'));
+                const domainChips = Array.from(document.querySelectorAll('[data-domain-filter]'));
+                const techChips = Array.from(document.querySelectorAll('[data-tech-filter]'));
+                const statusChips = Array.from(document.querySelectorAll('[data-status-filter]'));
                 const ticketCards = Array.from(document.querySelectorAll('[data-domain-keys]'));
                 let activeDomain = null;
+                let activeTech = null;
+                let activeStatus = null;
 
                 const parseKeys = (value) => {
                     if (!value) {
@@ -132,16 +193,22 @@
                     return value.split(',').map((item) => item.trim()).filter(Boolean);
                 };
 
-                const applyTicketFilter = (domainKey) => {
+                const applyTicketFilter = (domainKey, techId, statusKey) => {
                     ticketCards.forEach((card) => {
                         const keys = parseKeys(card.dataset.domainKeys || '');
-                        const show = !domainKey || keys.includes(domainKey);
+                        const tech = card.dataset.technicianId || '';
+                        const status = card.dataset.statusKey || '';
+                        const showDomain = !domainKey || keys.includes(domainKey);
+                        const showTech = !techId
+                            || (techId === 'unassigned' ? tech === '' : tech === String(techId));
+                        const showStatus = !statusKey || status === statusKey;
+                        const show = showDomain && showTech && showStatus;
                         card.classList.toggle('hidden', !show);
                     });
                 };
 
-                const setActiveChip = (domainKey) => {
-                    chips.forEach((chip) => {
+                const setActiveDomainChip = (domainKey) => {
+                    domainChips.forEach((chip) => {
                         const isActive = chip.dataset.domainFilter === domainKey;
                         chip.classList.toggle('ring-2', isActive);
                         chip.classList.toggle('ring-black/20', isActive);
@@ -150,27 +217,73 @@
                     });
                 };
 
-                const applyFilter = (domainKey) => {
+                const setActiveTechChip = (techId) => {
+                    techChips.forEach((chip) => {
+                        const isActive = String(chip.dataset.techFilter) === String(techId);
+                        chip.classList.toggle('ring-2', isActive);
+                        chip.classList.toggle('ring-black/20', isActive);
+                        chip.classList.toggle('opacity-70', techId && !isActive);
+                        chip.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+                    });
+                };
+
+                const setActiveStatusChip = (statusKey) => {
+                    statusChips.forEach((chip) => {
+                        const isActive = chip.dataset.statusFilter === statusKey;
+                        chip.classList.toggle('ring-2', isActive);
+                        chip.classList.toggle('ring-black/20', isActive);
+                        chip.classList.toggle('opacity-70', statusKey && !isActive);
+                        chip.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+                    });
+                };
+
+                const applyFilter = (domainKey, techId, statusKey) => {
                     activeDomain = domainKey || null;
-                    setActiveChip(activeDomain);
-                    applyTicketFilter(activeDomain);
+                    activeTech = techId || null;
+                    activeStatus = statusKey || null;
+                    setActiveDomainChip(activeDomain);
+                    setActiveTechChip(activeTech);
+                    setActiveStatusChip(activeStatus);
+                    applyTicketFilter(activeDomain, activeTech, activeStatus);
                     if (window.adminDomainFilter && typeof window.adminDomainFilter.apply === 'function') {
-                        window.adminDomainFilter.apply(activeDomain);
+                        window.adminDomainFilter.apply(activeDomain, activeTech, activeStatus);
                     }
                 };
 
-                chips.forEach((chip) => {
+                domainChips.forEach((chip) => {
                     chip.addEventListener('click', () => {
                         const key = chip.dataset.domainFilter;
                         if (activeDomain === key) {
-                            applyFilter(null);
+                            applyFilter(null, activeTech, activeStatus);
                             return;
                         }
-                        applyFilter(key);
+                        applyFilter(key, activeTech, activeStatus);
                     });
                 });
 
-                applyFilter(null);
+                techChips.forEach((chip) => {
+                    chip.addEventListener('click', () => {
+                        const key = chip.dataset.techFilter;
+                        if (String(activeTech) === String(key)) {
+                            applyFilter(activeDomain, null, activeStatus);
+                            return;
+                        }
+                        applyFilter(activeDomain, key, activeStatus);
+                    });
+                });
+
+                statusChips.forEach((chip) => {
+                    chip.addEventListener('click', () => {
+                        const key = chip.dataset.statusFilter;
+                        if (activeStatus === key) {
+                            applyFilter(activeDomain, activeTech, null);
+                            return;
+                        }
+                        applyFilter(activeDomain, activeTech, key);
+                    });
+                });
+
+                applyFilter(null, null, null);
             });
         </script>
     @endpush
