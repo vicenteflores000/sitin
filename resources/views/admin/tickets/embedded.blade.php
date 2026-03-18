@@ -1,4 +1,4 @@
-<div id="admin-ticket-manager" class="bg-white rounded-xl shadow-xl border border-gray-200 p-6 flex flex-col h-full" x-data="{ showResolved: false, query: '' }">
+<div id="admin-ticket-manager" data-auth-id="{{ auth()->id() }}" class="bg-white rounded-xl shadow-xl border border-gray-200 p-6 flex flex-col h-full" x-data="{ showResolved: false, query: '' }">
     <div class="flex items-center justify-between mb-4 gap-3">
         <div class="flex items-center gap-2" x-data="{ openSearch: false }">
             <div
@@ -61,7 +61,15 @@
                 ]))));
             @endphp
             <div
-                x-data="{ open: false, tab: 'antecedentes', canResolve: {{ ($classificationComplete && $actionsCount > 0 && $canManage) ? 'true' : 'false' }} }"
+                x-data="{
+                    open: false,
+                    tab: 'antecedentes',
+                    actionsCount: {{ $actionsCount }},
+                    classificationComplete: {{ $classificationComplete ? 'true' : 'false' }},
+                    canManage: {{ $canManage ? 'true' : 'false' }},
+                    hasAssignment: {{ $hasAssignment ? 'true' : 'false' }},
+                    canResolve() { return this.canManage && this.actionsCount > 0 && this.classificationComplete; }
+                }"
                 x-show="(showResolved || !{{ $isResolved ? 'true' : 'false' }}) && (!query || ($el.dataset.search && $el.dataset.search.includes(query.toLowerCase())))"
                 x-cloak
                 class="group border rounded-lg bg-gray-50 cursor-pointer {{ $isResolved ? 'px-3 py-2 text-[11px] text-gray-500' : 'p-4' }}"
@@ -177,13 +185,13 @@
                                         Clasificación
                                     </button>
                                     <button type="button"
-                                        :disabled="!canResolve"
-                                        @click="canResolve ? (tab = 'resolucion') : null"
+                                        :disabled="!canResolve()"
+                                        @click="canResolve() ? (tab = 'resolucion') : null"
                                         :class="tab === 'resolucion' ? 'bg-white border-gray-200 shadow-sm' : 'bg-transparent border-transparent'"
                                         class="w-full text-left rounded-lg border px-3 py-2 transition disabled:opacity-40 disabled:cursor-not-allowed">
                                         Resolución
                                     </button>
-                                    <div x-show="!canResolve" class="text-[11px] text-gray-400">
+                                    <div x-show="!canResolve()" class="text-[11px] text-gray-400">
                                         Completa acciones y clasificación para habilitar resolución.
                                     </div>
                                 </div>
@@ -265,11 +273,9 @@
                                 </div>
 
                                 <div x-show="tab === 'acciones'">
-                                    @if(! $hasAssignment)
-                                        <div class="mb-4 rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3 text-xs text-yellow-800">
-                                            Asigna el ticket a un técnico para poder registrar acciones.
-                                        </div>
-                                    @endif
+                                    <div x-show="!hasAssignment" class="mb-4 rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3 text-xs text-yellow-800">
+                                        Asigna el ticket a un técnico para poder registrar acciones.
+                                    </div>
                                     <div class="flex items-center justify-between mb-3">
                                         <div class="text-sm font-medium text-gray-700">Acciones registradas</div>
                                         @unless($canManage)
@@ -310,36 +316,34 @@
                                         <div class="text-xs uppercase tracking-wide text-gray-400">Agregar acción</div>
                                                     <form method="POST" action="{{ route('admin.tickets.actions', $ticket) }}" class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3" data-ajax="true" data-ajax-type="action" data-ticket-id="{{ $ticket->id }}">
                                                         @csrf
-                                                        <select name="action_type" required class="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700" @disabled(!$canManage)>
-                                                <option value="repuesto">Repuesto</option>
-                                                <option value="instalacion">Instalación</option>
-                                                <option value="compra">Compra</option>
-                                                <option value="otro">Otro</option>
-                                            </select>
-                                            <select name="status" required class="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700" @disabled(!$canManage)>
-                                                <option value="pendiente">Pendiente</option>
-                                                <option value="en_progreso">En progreso</option>
-                                                <option value="completado">Completado</option>
-                                            </select>
-                                            <textarea name="description" rows="2" placeholder="Describe la acción o tarea" required
-                                                class="md:col-span-2 rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700" @disabled(!$canManage)></textarea>
-                                            <div class="md:col-span-2 flex justify-end">
-                                                <button type="submit"
-                                                    class="rounded-lg border border-[#6B8E23] px-3 py-2 text-xs text-[#6B8E23] hover:bg-[#F4F7EE] disabled:opacity-50"
-                                                    @disabled(!$canManage)>
-                                                    Guardar acción
-                                                </button>
-                                            </div>
-                                        </form>
+                                                        <select name="action_type" required class="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700" :disabled="!canManage">
+                                                            <option value="repuesto">Repuesto</option>
+                                                            <option value="instalacion">Instalación</option>
+                                                            <option value="compra">Compra</option>
+                                                            <option value="otro">Otro</option>
+                                                        </select>
+                                                        <select name="status" required class="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700" :disabled="!canManage">
+                                                            <option value="pendiente">Pendiente</option>
+                                                            <option value="en_progreso">En progreso</option>
+                                                            <option value="completado">Completado</option>
+                                                        </select>
+                                                        <textarea name="description" rows="2" placeholder="Describe la acción o tarea" required
+                                                            class="md:col-span-2 rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700" :disabled="!canManage"></textarea>
+                                                        <div class="md:col-span-2 flex justify-end">
+                                                            <button type="submit"
+                                                                class="rounded-lg border border-[#6B8E23] px-3 py-2 text-xs text-[#6B8E23] hover:bg-[#F4F7EE] disabled:opacity-50"
+                                                                :disabled="!canManage">
+                                                                Guardar acción
+                                                            </button>
+                                                        </div>
+                                                    </form>
                                     </div>
                                 </div>
 
                                 <div x-show="tab === 'clasificacion'">
-                                    @if(! $hasAssignment)
-                                        <div class="mb-4 rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3 text-xs text-yellow-800">
-                                            Asigna el ticket a un técnico para poder clasificar.
-                                        </div>
-                                    @endif
+                                    <div x-show="!hasAssignment" class="mb-4 rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3 text-xs text-yellow-800">
+                                        Asigna el ticket a un técnico para poder clasificar.
+                                    </div>
                                     <div class="flex items-center justify-between mb-3">
                                         <div class="text-sm font-medium text-gray-700">Clasificación técnica</div>
                                         @unless($canManage)
@@ -351,17 +355,17 @@
                                                     @csrf
                                                     <input type="text" name="categoria_interna" placeholder="Categoría interna" required
                                                         value="{{ old('categoria_interna', $ticket->categoria_interna) }}"
-                                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700" @disabled(!$canManage)>
+                                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700" :disabled="!canManage">
                                         <input type="text" name="problem_type" placeholder="Tipo de problema" required
                                             value="{{ old('problem_type', $ticket->problem_type) }}"
-                                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700" @disabled(!$canManage)>
+                                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700" :disabled="!canManage">
                                         <input type="text" name="root_cause" placeholder="Causa raíz" required
                                             value="{{ old('root_cause', $ticket->root_cause) }}"
-                                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700" @disabled(!$canManage)>
+                                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700" :disabled="!canManage">
                                         <div class="flex justify-end">
                                             <button type="submit"
                                                 class="rounded-lg border border-gray-300 px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-                                                @disabled(!$canManage)>
+                                                :disabled="!canManage">
                                                 Guardar clasificación
                                             </button>
                                         </div>
@@ -370,11 +374,9 @@
 
                                 <div x-show="tab === 'resolucion'">
                                     <div class="text-sm font-medium text-gray-700 mb-3">Resolución</div>
-                                    @if(! $hasAssignment)
-                                        <div class="mb-4 rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3 text-xs text-yellow-800">
-                                            Asigna el ticket a un técnico para completar la resolución.
-                                        </div>
-                                    @endif
+                                    <div x-show="!hasAssignment" class="mb-4 rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3 text-xs text-yellow-800">
+                                        Asigna el ticket a un técnico para completar la resolución.
+                                    </div>
                                     @if($actionsCount === 0)
                                         <div class="mb-4 rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3 text-xs text-yellow-800">
                                             Registra al menos una acción antes de completar la resolución.
@@ -388,11 +390,11 @@
                                                 <form method="POST" action="{{ route('admin.tickets.resolve', $ticket) }}" class="space-y-3" data-ajax="true" data-ajax-type="resolution" data-ticket-id="{{ $ticket->id }}">
                                                     @csrf
                                                     <textarea name="resolution_text" rows="4" placeholder="Resumen de resolución" required
-                                                        class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700" @disabled(!$canManage)>{{ $ticket->resolution?->resolution_text }}</textarea>
+                                                        class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700" :disabled="!canManage">{{ $ticket->resolution?->resolution_text }}</textarea>
                                         <div class="flex justify-end">
                                             <button type="submit"
                                                 class="rounded-lg border border-[#6B8E23] px-3 py-2 text-xs text-[#6B8E23] hover:bg-[#F4F7EE] disabled:opacity-50"
-                                                @disabled(!$canManage)>
+                                                :disabled="!canManage">
                                                 Completar ticket
                                             </button>
                                         </div>

@@ -391,6 +391,25 @@
                                 if (card) {
                                     card.dataset.technicianIds = ids.join(',');
                                 }
+                                const authId = manager.dataset.authId;
+                                if (ticketCard && ticketCard.__x && ticketCard.__x.$data) {
+                                    ticketCard.__x.$data.hasAssignment = ids.length > 0;
+                                    if (authId) {
+                                        ticketCard.__x.$data.canManage = ids.includes(String(authId));
+                                    }
+                                }
+                            }
+
+                            const ticketCard = form.closest('[data-ticket-id]');
+                            if (ticketCard && ticketCard.__x && ticketCard.__x.$data) {
+                                if (form.dataset.ajaxType === 'action') {
+                                    const current = Number(ticketCard.__x.$data.actionsCount || 0);
+                                    ticketCard.__x.$data.actionsCount = current + 1;
+                                    form.reset();
+                                }
+                                if (form.dataset.ajaxType === 'classification') {
+                                    ticketCard.__x.$data.classificationComplete = true;
+                                }
                             }
 
                             if (window.showToast) {
