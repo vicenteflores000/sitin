@@ -2,7 +2,7 @@
     <div class="w-full h-screen flex flex-col items-center px-4 bg-[#FAFAF7] overflow-hidden">
 
         {{-- Contenedor principal centrado verticalmente --}}
-        <div class="w-full max-w-xl py-8 flex flex-col justify-center" style="height: calc(100vh - 2rem);">
+        <div class="w-full max-w-7xl py-8 flex flex-col justify-center" style="height: calc(100vh - 2rem);">
 
             {{-- Header sobrio --}}
             <div class="mb-10 text-center">
@@ -233,87 +233,6 @@
                 </div>
             </div>
 
-            @if(auth()->user()->role === 'admin')
-            {{-- Acciones administrativas --}}
-            <div class="mt-6 pb-4 flex-shrink-0 flex justify-center">
-                <div
-                    x-data="{ open: false, timer: null }"
-                    @mouseenter="clearTimeout(timer); open = true"
-                    @mouseleave="timer = setTimeout(() => open = false, 250)"
-                    class="relative w-full">
-                    <button
-                        type="button"
-                        class="w-full rounded-xl border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-white-50 transition">
-                        Menú de Administrador
-                    </button>
-
-                    <div
-                        x-show="open"
-                        x-transition:enter="transition ease-out duration-150"
-                        x-transition:enter-start="opacity-0 translate-y-2"
-                        x-transition:enter-end="opacity-100 translate-y-0"
-                        x-transition:leave="transition ease-in duration-150"
-                        x-transition:leave-start="opacity-100 translate-y-0"
-                        x-transition:leave-end="opacity-0 translate-y-2"
-                        @mouseenter="clearTimeout(timer); open = true"
-                        @mouseleave="timer = setTimeout(() => open = false, 250)"
-                        class="absolute left-0 right-0 bottom-full mb-2">
-                        <div class="bg-white border border-gray-200 rounded-xl shadow-lg p-2 space-y-2">
-                            {{-- Opciones GLPI ocultas temporalmente --}}
-
-                            <form action="{{ route('admin.profiles.index') }}" method="GET">
-                                <button
-                                    type="submit"
-                                    class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                                    Gestionar usuarios
-                                </button>
-                            </form>
-
-                            <form action="{{ route('admin.locaciones.index') }}" method="GET">
-                                <button
-                                    type="submit"
-                                    class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                                    Gestionar locaciones
-                                </button>
-                            </form>
-
-                            <form action="{{ route('admin.tickets.index') }}" method="GET">
-                                <button
-                                    type="submit"
-                                    class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                                    Gestionar tickets
-                                </button>
-                            </form>
-
-                            <form action="{{ route('admin.calendar.index') }}" method="GET">
-                                <button
-                                    type="submit"
-                                    class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                                    Calendario
-                                </button>
-                            </form>
-
-                            <form action="{{ route('admin.printers.index') }}" method="GET">
-                                <button
-                                    type="submit"
-                                    class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                                    Gestionar impresoras
-                                </button>
-                            </form>
-
-                            <form action="{{ route('admin.logs.index') }}" method="GET">
-                                <button
-                                    type="submit"
-                                    class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                                    Log general
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            @endif
-
             <div id="ticket-history-modal" class="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 hidden" aria-hidden="true">
                 <div class="bg-white rounded-xl shadow-xl w-full max-w-2xl p-6 relative" role="dialog" aria-modal="true" aria-labelledby="ticket-history-title">
                     <div class="flex items-center justify-between mb-4">
@@ -464,7 +383,11 @@
                     }
                     if (viewer) {
                         viewer.addEventListener('click', (event) => {
-                            if (event.target === viewer) {
+                            const clickedInsideStage = viewerStage && viewerStage.contains(event.target);
+                            const clickedPrev = viewerPrev && viewerPrev.contains(event.target);
+                            const clickedNext = viewerNext && viewerNext.contains(event.target);
+                            const clickedClose = viewerClose && viewerClose.contains(event.target);
+                            if (!clickedInsideStage && !clickedPrev && !clickedNext && !clickedClose) {
                                 closeViewer();
                             }
                         });

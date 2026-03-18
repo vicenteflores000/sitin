@@ -1,4 +1,9 @@
+@php
+    $embedded = $embedded ?? false;
+@endphp
+@if(!$embedded)
 <x-layouts.clean>
+@endif
     @push('head')
         <style>
             .fc {
@@ -82,6 +87,48 @@
 
             .fc .fc-timegrid-now-indicator-arrow {
                 border-color: #DC2626;
+            }
+
+            .fc {
+                font-size: 0.75rem;
+                --fc-small-font-size: 0.65rem;
+            }
+
+            .fc .fc-toolbar-title {
+                font-size: 0.95rem;
+            }
+
+            .fc .fc-button {
+                padding: 0.25rem 0.5rem;
+                font-size: 0.7rem;
+            }
+
+            .fc .fc-daygrid-day-number,
+            .fc .fc-timegrid-slot-label,
+            .fc .fc-col-header-cell-cushion {
+                font-size: 0.7rem;
+            }
+
+            .fc .fc-timegrid-slot {
+                height: 1.2rem;
+            }
+
+            .fc .fc-timegrid-axis-cushion,
+            .fc .fc-timegrid-slot-label-cushion {
+                padding: 0 2px;
+            }
+
+            .fc .fc-event {
+                font-size: 0.7rem;
+                padding: 0.1rem 0.25rem;
+            }
+
+            .fc .fc-daygrid-event {
+                line-height: 1.1;
+            }
+
+            .fc .fc-daygrid-event-harness {
+                margin-top: 1px;
             }
         </style>
     @endpush
@@ -583,4 +630,6 @@
             });
         </script>
     @endpush
+@if(!$embedded)
 </x-layouts.clean>
+@endif

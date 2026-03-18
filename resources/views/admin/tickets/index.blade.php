@@ -35,29 +35,32 @@
                             $canManage = $hasAssignment && $ticket->currentAssignment->technician_id === auth()->id();
                             $classificationComplete = ($ticket->categoria_interna && $ticket->problem_type && $ticket->root_cause);
                             $actionsCount = $ticket->actions->count();
+                            $isResolved = in_array($status, ['resuelto', 'cerrado'], true);
                         @endphp
-                        <div x-data="{ open: false, tab: 'antecedentes', canResolve: {{ ($classificationComplete && $actionsCount > 0 && $canManage) ? 'true' : 'false' }}, showReassign: false }" class="border rounded-lg p-4 bg-gray-50">
+                        <div x-data="{ open: false, tab: 'antecedentes', canResolve: {{ ($classificationComplete && $actionsCount > 0 && $canManage) ? 'true' : 'false' }}, showReassign: false }" class="group border rounded-lg bg-gray-50 cursor-pointer {{ $isResolved ? 'px-3 py-2 text-[11px] text-gray-500' : 'p-4' }}" @click="open = true" role="button" tabindex="0">
                             <div class="flex items-start justify-between gap-4">
                                 <div>
-                                    <div class="font-medium text-gray-800">#{{ $ticket->id }} · {{ $ticket->categoria }}</div>
-                                    <div class="text-sm text-gray-600">{{ $ticket->usuario_mail }}</div>
-                                    <div class="text-xs text-gray-400">Ubicación: {{ $locacionLabel }}</div>
-                                    <div class="mt-2 text-sm text-gray-700">{{ $ticket->descripcion }}</div>
+                                    <div class="{{ $isResolved ? 'font-medium text-gray-500' : 'font-medium text-gray-800' }}">#{{ $ticket->id }} · {{ $ticket->categoria }}</div>
+                                    @if($isResolved)
+                                        <div class="text-[11px] text-gray-500">{{ $ticket->usuario_mail }}</div>
+                                    @else
+                                        <div class="text-sm text-gray-600">{{ $ticket->usuario_mail }}</div>
+                                        <div class="text-xs text-gray-400">Ubicación: {{ $locacionLabel }}</div>
+                                        <div class="mt-2 text-sm text-gray-700">{{ $ticket->descripcion }}</div>
+                                    @endif
                                 </div>
 
                                 <div class="text-xs text-gray-500 text-right">
-                                    <div>Estado: <span class="font-medium text-gray-700">{{ $status }}</span></div>
-                                    <div>Asignado: {{ $ticket->currentAssignment?->technician?->name ?? '—' }}</div>
-                                    <div>{{ $ticket->created_at->format('d-m-Y H:i') }}</div>
+                                    <div>Estado: <span class="{{ $isResolved ? 'font-medium text-gray-500' : 'font-medium text-gray-700' }}">{{ $status }}</span></div>
+                                    @if(!$isResolved)
+                                        <div>Asignado: {{ $ticket->currentAssignment?->technician?->name ?? '—' }}</div>
+                                        <div>{{ $ticket->created_at->format('d-m-Y H:i') }}</div>
+                                    @endif
                                 </div>
                             </div>
 
-                            <div class="mt-4">
-                                <button type="button"
-                                    @click="open = true"
-                                    class="rounded-lg border border-gray-300 px-3 py-2 text-xs text-gray-700 hover:bg-gray-50">
-                                    Gestionar ticket
-                                </button>
+                            <div class="{{ $isResolved ? 'mt-1' : 'mt-3' }} text-[10px] text-gray-400 opacity-0 group-hover:opacity-100 transition">
+                                Clic para ver las acciones
                             </div>
 
                             <div x-show="open" class="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">

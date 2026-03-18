@@ -132,6 +132,7 @@ class AdminCalendarController extends Controller
         }
         $synced = $schedule->outlook_status === 'synced';
         $className = $synced ? 'event-synced' : 'event-error';
+        $domainKeys = $this->resolveDomainKeys($ticket);
 
         return [
             'id' => (string) $schedule->id,
@@ -144,8 +145,34 @@ class AdminCalendarController extends Controller
                 'location' => $location,
                 'user' => $ticket->usuario_mail,
                 'modality' => $schedule->modality,
+                'domain_keys' => $domainKeys,
             ],
         ];
+    }
+
+    protected function resolveDomainKeys(?Ticket $ticket): array
+    {
+        if (! $ticket) {
+            return [];
+        }
+
+        $domainMap = [
+            'salud.mdonihue.cl' => 'salud',
+            'edudonihue.cl' => 'educacion',
+            'mdonihue.cl' => 'municipal',
+        ];
+
+        $email = $ticket->usuario_mail ?? '';
+        if (!str_contains($email, '@')) {
+            return [];
+        }
+
+        $domain = strtolower(substr(strrchr($email, '@'), 1) ?: '');
+        $domain = str_replace(['@', ' '], '', $domain);
+        $domain = iconv('UTF-8', 'ASCII//TRANSLIT', $domain) ?: $domain;
+        $key = $domainMap[$domain] ?? null;
+
+        return $key ? [$key] : [];
     }
 
     protected function createOutlookEvent(OutlookCalendarService $outlook, Ticket $ticket, TicketSchedule $schedule): ?string

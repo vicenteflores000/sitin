@@ -19,6 +19,10 @@ Route::get('/dashboard', [DashboardController::class, 'index'])
     ->middleware(['auth', 'active.user', 'force.password'])
     ->name('dashboard');
 
+Route::get('/admin-dashboard', [DashboardController::class, 'admin'])
+    ->middleware(['auth', 'active.user', 'force.password', 'admin'])
+    ->name('admin.dashboard');
+
 Route::get('/ticket', [TicketController::class, 'create'])
     ->name('ticket.create');
 Route::post('/ticket', [TicketController::class, 'store'])

@@ -179,18 +179,56 @@
                         </form>
                     </div>
                 </div>
-                <a
-                    href="{{ route('dashboard') }}"
-                    data-auth-required="{{ auth()->check() ? 'false' : 'true' }}"
-                    id="dashboard-link"
-                    class="flex-1 inline-flex items-center justify-center gap-2 rounded-xl border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition">
-                    <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" stroke-width="2"
-                        viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round"
-                            d="M3 10h7V3H3v7zM14 21h7v-7h-7v7zM14 3h7v7h-7V3zM3 21h7v-7H3v7z" />
-                    </svg>
-                    Dashboard
-                </a>
+                @if(auth()->user()?->isAdmin())
+                    <div x-data="{ open: false }" class="relative flex-1">
+                        <button
+                            type="button"
+                            @click="open = !open"
+                            @click.outside="open = false"
+                            class="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition">
+                            <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" stroke-width="2"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M3 10h7V3H3v7zM14 21h7v-7h-7v7zM14 3h7v7h-7V3zM3 21h7v-7H3v7z" />
+                            </svg>
+                            Dashboard
+                            <svg class="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" stroke-width="2"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+                        <div
+                            x-show="open"
+                            x-transition
+                            class="absolute left-0 right-0 mt-2 bg-white border border-gray-200 rounded-xl shadow-sm z-50">
+                            <a
+                                href="{{ route('dashboard') }}"
+                                data-auth-required="{{ auth()->check() ? 'false' : 'true' }}"
+                                class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-xl">
+                                Dashboard de Usuario
+                            </a>
+                            <a
+                                href="{{ route('admin.dashboard') }}"
+                                data-auth-required="{{ auth()->check() ? 'false' : 'true' }}"
+                                class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-xl">
+                                Dashboard de Administrador
+                            </a>
+                        </div>
+                    </div>
+                @else
+                    <a
+                        href="{{ route('dashboard') }}"
+                        data-auth-required="{{ auth()->check() ? 'false' : 'true' }}"
+                        id="dashboard-link"
+                        class="flex-1 inline-flex items-center justify-center gap-2 rounded-xl border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition">
+                        <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" stroke-width="2"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M3 10h7V3H3v7zM14 21h7v-7h-7v7zM14 3h7v7h-7V3zM3 21h7v-7H3v7z" />
+                        </svg>
+                        Dashboard
+                    </a>
+                @endif
             </div>
         </div>
     </div>
@@ -544,8 +582,7 @@
 
             window.openAuthModal = openModal;
 
-            const dashboardLink = document.querySelector('[data-auth-required]');
-            if (dashboardLink) {
+            document.querySelectorAll('[data-auth-required]').forEach((dashboardLink) => {
                 dashboardLink.addEventListener('click', (event) => {
                     if (sessionActive) {
                         return;
@@ -553,7 +590,7 @@
                     event.preventDefault();
                     openModal('dashboard', dashboardLink.getAttribute('href'));
                 });
-            }
+            });
 
             const authMenu = document.getElementById('auth-menu');
             const authMenuText = document.getElementById('auth-menu-text');
