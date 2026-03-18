@@ -178,7 +178,7 @@
                                     ? $ticket->locacion->padre->nombre . ' - ' . $ticket->locacion->nombre
                                     : ($ticket->locacion?->nombre ?? 'Sin ubicación');
                         @endphp
-                        <option value="{{ $ticket->id }}">#{{ $ticket->id }} · {{ $ticket->categoria }} · {{ $loc }}</option>
+                        <option value="{{ $ticket->id }}">#{{ $ticket->display_id }} · {{ $ticket->categoria }} · {{ $loc }}</option>
                     @endforeach
                 </select>
             </div>

@@ -25,6 +25,7 @@ class AdminTicketController extends Controller
             'locacion.padre',
             'latestStatusEvent',
             'currentAssignment.technician',
+            'requester',
             'resolution',
             'parts',
             'actions.creator',

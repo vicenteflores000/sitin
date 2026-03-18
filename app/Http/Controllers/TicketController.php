@@ -147,7 +147,7 @@ class TicketController extends Controller
 
         return redirect()
             ->route('ticket.create')
-            ->with('success', "Ticket enviado correctamente con el ID: {$ticket->id}");
+            ->with('success', "Ticket enviado correctamente con el ID: {$ticket->display_id}");
     }
 
     protected function authErrorResponse(StoreTicketRequest $request, string $message, int $status = 422, array $meta = [])

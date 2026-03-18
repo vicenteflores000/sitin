@@ -18,7 +18,7 @@ class DashboardController extends Controller
 
     public function admin()
     {
-        $calendarTickets = Ticket::with('locacion.padre', 'currentAssignment.technician')
+        $calendarTickets = Ticket::with('locacion.padre', 'currentAssignment.technician', 'requester')
             ->whereHas('currentAssignment', function ($query) {
                 $query->where('technician_id', auth()->id());
             })
@@ -27,6 +27,7 @@ class DashboardController extends Controller
 
         $adminTickets = Ticket::with([
             'locacion.padre',
+            'requester',
             'latestStatusEvent',
             'currentAssignment.technician',
             'resolution',
@@ -188,6 +189,7 @@ class DashboardController extends Controller
                 'resolution',
                 'latestStatusEvent',
                 'attachments',
+                'requester',
             ])
             ->orderByDesc('created_at')
             ->get();

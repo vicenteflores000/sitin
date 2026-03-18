@@ -22,7 +22,7 @@ class TicketActionLogged extends Mailable
 
     public function build()
     {
-        $subject = "Nueva acción en Ticket #{$this->ticket->id}";
+        $subject = "Nueva acción en Ticket #{$this->ticket->display_id}";
 
         return $this->subject($subject)
             ->view('emails.tickets.action', [

@@ -130,7 +130,7 @@ class AuditObserver
         $class = class_basename($model);
 
         return match ($class) {
-            'Ticket' => "Ticket #{$model->id}",
+            'Ticket' => "Ticket #{$model->display_id}",
             'TicketAssignment' => "Asignación ticket #{$model->ticket_id}",
             'TicketAction' => "Acción ticket #{$model->ticket_id}",
             'TicketPart' => "Repuesto ticket #{$model->ticket_id}",

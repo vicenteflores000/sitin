@@ -15,7 +15,7 @@ class AdminCalendarController extends Controller
 {
     public function index()
     {
-        $tickets = Ticket::with('locacion.padre', 'currentAssignment.technician')
+        $tickets = Ticket::with('locacion.padre', 'currentAssignment.technician', 'requester')
             ->whereHas('currentAssignment', function ($query) {
                 $query->where('technician_id', auth()->id());
             })
@@ -27,7 +27,7 @@ class AdminCalendarController extends Controller
 
     public function events(Request $request): JsonResponse
     {
-        $query = TicketSchedule::with('ticket.locacion.padre')
+        $query = TicketSchedule::with('ticket.locacion.padre', 'ticket.requester')
             ->orderBy('start_at');
 
         $scope = $request->query('scope');
@@ -146,7 +146,7 @@ class AdminCalendarController extends Controller
 
         return [
             'id' => (string) $schedule->id,
-            'title' => "Ticket #{$ticket->id} · {$ticket->categoria}",
+            'title' => "Ticket #{$ticket->display_id} · {$ticket->categoria}",
             'start' => $schedule->start_at->toIso8601String(),
             'end' => $schedule->end_at->toIso8601String(),
             'classNames' => $classNames,
@@ -200,10 +200,10 @@ class AdminCalendarController extends Controller
 
         $description = nl2br(e($ticket->descripcion ?? ''));
         $payload = [
-            'subject' => "Ticket #{$ticket->id} · {$ticket->categoria}",
+            'subject' => "Ticket #{$ticket->display_id} · {$ticket->categoria}",
             'body' => [
                 'contentType' => 'HTML',
-                'content' => "<strong>Ticket #{$ticket->id}</strong><br>{$description}<br><br>Modalidad: {$modalityLabel}",
+                'content' => "<strong>Ticket #{$ticket->display_id}</strong><br>{$description}<br><br>Modalidad: {$modalityLabel}",
             ],
             'start' => [
                 'dateTime' => $schedule->start_at->toIso8601String(),
@@ -258,7 +258,7 @@ class AdminCalendarController extends Controller
             ],
             'body' => [
                 'contentType' => 'HTML',
-                'content' => "<strong>Ticket #{$schedule->ticket->id}</strong><br>{$description}<br><br>Modalidad: {$modalityLabel}",
+                'content' => "<strong>Ticket #{$schedule->ticket->display_id}</strong><br>{$description}<br><br>Modalidad: {$modalityLabel}",
             ],
         ];
 

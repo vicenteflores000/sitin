@@ -40,7 +40,7 @@
                         <div x-data="{ open: false, tab: 'antecedentes', canResolve: {{ ($classificationComplete && $actionsCount > 0 && $canManage) ? 'true' : 'false' }}, showReassign: false }" class="group border rounded-lg bg-gray-50 cursor-pointer {{ $isResolved ? 'px-3 py-2 text-[11px] text-gray-500' : 'p-4' }}" @click="open = true" role="button" tabindex="0">
                             <div class="flex items-start justify-between gap-4">
                                 <div>
-                                    <div class="{{ $isResolved ? 'font-medium text-gray-500' : 'font-medium text-gray-800' }}">#{{ $ticket->id }} · {{ $ticket->categoria }}</div>
+                                    <div class="{{ $isResolved ? 'font-medium text-gray-500' : 'font-medium text-gray-800' }}">#{{ $ticket->display_id }} · {{ $ticket->categoria }}</div>
                                     @if($isResolved)
                                         <div class="text-[11px] text-gray-500">{{ $ticket->usuario_mail }}</div>
                                     @else
@@ -67,7 +67,7 @@
                                 <div class="bg-white rounded-xl shadow-lg w-full max-w-5xl p-0 overflow-hidden" @click.outside="open = false">
                                     <div class="flex flex-col gap-3 px-6 pt-6 pb-4 border-b border-gray-100">
                                         <div class="flex items-center justify-between">
-                                            <h3 class="text-lg font-semibold">Gestionar ticket #{{ $ticket->id }}</h3>
+                                            <h3 class="text-lg font-semibold">Gestionar ticket #{{ $ticket->display_id }}</h3>
                                             <button type="button" @click="open = false" class="text-gray-500 hover:text-gray-700">✕</button>
                                         </div>
                                         <div class="flex flex-wrap items-center gap-3 text-sm text-gray-600">

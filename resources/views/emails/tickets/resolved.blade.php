@@ -21,7 +21,7 @@
                         </td>
                     </tr>
                     <tr>
-                        <td style="font-size:16px; font-weight:600; padding-bottom:8px;">Ticket #{{ $ticket->id }}</td>
+                        <td style="font-size:16px; font-weight:600; padding-bottom:8px;">Ticket #{{ $ticket->display_id }}</td>
                     </tr>
                     <tr>
                         <td style="font-size:14px; color:#4b5563; padding-bottom:16px;">

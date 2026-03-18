@@ -22,9 +22,9 @@ class TicketScheduled extends Mailable
     public function build()
     {
         $subject = match ($this->mode) {
-            'updated' => "Ticket #{$this->ticket->id} reprogramado",
-            'deleted' => "Ticket #{$this->ticket->id} cancelado",
-            default => "Ticket #{$this->ticket->id} agendado",
+            'updated' => "Ticket #{$this->ticket->display_id} reprogramado",
+            'deleted' => "Ticket #{$this->ticket->display_id} cancelado",
+            default => "Ticket #{$this->ticket->display_id} agendado",
         };
 
         return $this->subject($subject)

@@ -22,7 +22,7 @@ class TicketResolved extends Mailable
 
     public function build()
     {
-        $subject = "Ticket #{$this->ticket->id} resuelto";
+        $subject = "Ticket #{$this->ticket->display_id} resuelto";
 
         return $this->subject($subject)
             ->view('emails.tickets.resolved', [

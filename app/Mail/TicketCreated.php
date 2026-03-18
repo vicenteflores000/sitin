@@ -17,7 +17,7 @@ class TicketCreated extends Mailable
 
     public function build()
     {
-        return $this->subject("Nuevo ticket #{$this->ticket->id}")
+        return $this->subject("Nuevo ticket #{$this->ticket->display_id}")
             ->view('emails.tickets.created', [
                 'logoUrl' => asset('images/logo.png'),
             ]);

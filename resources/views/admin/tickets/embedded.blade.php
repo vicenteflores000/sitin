@@ -36,7 +36,7 @@
                 <div class="flex items-start justify-between gap-4">
                     <div>
                         <div class="{{ $isResolved ? 'font-medium text-gray-500' : 'font-medium text-gray-800' }}">
-                            #{{ $ticket->id }} · {{ $ticket->categoria }}
+                            #{{ $ticket->display_id }} · {{ $ticket->categoria }}
                         </div>
                         @if($isResolved)
                             <div class="text-[11px] text-gray-500">
@@ -66,7 +66,7 @@
                     <div class="bg-white rounded-xl shadow-lg w-full max-w-5xl p-0 overflow-hidden" @click.outside="open = false">
                         <div class="flex flex-col gap-3 px-6 pt-6 pb-4 border-b border-gray-100">
                             <div class="flex items-center justify-between">
-                                <h3 class="text-lg font-semibold">Gestionar ticket #{{ $ticket->id }}</h3>
+                                <h3 class="text-lg font-semibold">Gestionar ticket #{{ $ticket->display_id }}</h3>
                                 <button type="button" @click="open = false" class="text-gray-500 hover:text-gray-700">✕</button>
                             </div>
                             <div class="flex flex-wrap items-center gap-3 text-sm text-gray-600">

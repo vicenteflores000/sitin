@@ -59,6 +59,33 @@ class Ticket extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function requester(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'usuario_mail', 'email');
+    }
+
+    public function getDisplayIdAttribute(): string
+    {
+        $est = $this->locacion_id ?? 0;
+        $ticketId = $this->id ?? 0;
+        $userId = $this->requester?->id;
+
+        if (! $userId && $this->usuario_mail) {
+            static $emailCache = [];
+            $emailKey = strtolower($this->usuario_mail);
+            if (array_key_exists($emailKey, $emailCache)) {
+                $userId = $emailCache[$emailKey];
+            } else {
+                $userId = User::where('email', $this->usuario_mail)->value('id');
+                $emailCache[$emailKey] = $userId ?: 0;
+            }
+        }
+
+        $userId = $userId ?? 0;
+
+        return sprintf('%03d%03d%03d', $est, $userId, $ticketId);
+    }
+
     public function statusEvents(): HasMany
     {
         return $this->hasMany(TicketStatusEvent::class);

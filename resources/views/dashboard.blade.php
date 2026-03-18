@@ -102,9 +102,7 @@
                         'en_espera',
                         ]);
 
-                        $establecimientoId = $ticket->locacion_id ?? 0;
-                        $usuarioId = auth()->id() ?? 0;
-                        $idCompuesto = sprintf('%03d%03d%03d', $establecimientoId, $usuarioId, $ticket->id);
+                        $idCompuesto = $ticket->display_id;
 
                         $statusRaw = $ticket->estado_glpi ?: $ticket->latestStatusEvent?->to_status;
                         $statusLabel = $statusRaw
