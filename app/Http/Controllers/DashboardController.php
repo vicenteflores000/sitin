@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Actions\SyncTicketStatusFromGlpi;
 use Illuminate\Http\RedirectResponse;
 use App\Actions\ReenviarTicketsPendientesAGlpi;
+use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
 class DashboardController extends Controller
@@ -83,6 +84,7 @@ class DashboardController extends Controller
         $techCards = [];
         foreach ($admins as $adminUser) {
             $techCards[$adminUser->id] = [
+                'id' => $adminUser->id,
                 'name' => $adminUser->name,
                 'assigned' => 0,
                 'resolved' => 0,
@@ -179,6 +181,157 @@ class DashboardController extends Controller
             'totalStats',
             'techCards'
         ));
+    }
+
+    public function adminTech(Request $request, User $technician)
+    {
+        if ($technician->role !== 'admin') {
+            abort(404);
+        }
+
+        $days = (int) $request->query('days', 30);
+        $allowedDays = [7, 14, 30, 60, 90];
+        if (! in_array($days, $allowedDays, true)) {
+            $days = 30;
+        }
+
+        $assignedTickets = Ticket::with([
+            'locacion.padre',
+            'latestStatusEvent',
+            'currentAssignments.technician',
+            'requester',
+        ])
+            ->whereHas('currentAssignments', function ($query) use ($technician) {
+                $query->where('technician_id', $technician->id);
+            })
+            ->orderByDesc('created_at')
+            ->get();
+
+        $activeAssigned = $assignedTickets->filter(function (Ticket $ticket) {
+            $status = $ticket->latestStatusEvent?->to_status ?? $ticket->estado_glpi ?? 'nuevo';
+            return ! in_array($status, ['resuelto', 'cerrado'], true);
+        })->values();
+
+        $resolvedTickets = Ticket::with([
+            'locacion.padre',
+            'latestStatusEvent',
+            'requester',
+        ])
+            ->where('resolved_by', $technician->id)
+            ->whereNotNull('resolved_at')
+            ->orderByDesc('resolved_at')
+            ->get();
+
+        $periodStart = now()->subDays($days - 1)->startOfDay();
+        $resolvedPeriod = $resolvedTickets->filter(function (Ticket $ticket) use ($periodStart) {
+            return $ticket->resolved_at && $ticket->resolved_at->gte($periodStart);
+        })->values();
+
+        $resolutionMinutes = $resolvedTickets->map(function (Ticket $ticket) {
+            if (! $ticket->resolved_at) {
+                return null;
+            }
+            return $ticket->created_at?->diffInMinutes($ticket->resolved_at);
+        })->filter()->values();
+
+        $resolutionMinutesPeriod = $resolvedPeriod->map(function (Ticket $ticket) {
+            if (! $ticket->resolved_at) {
+                return null;
+            }
+            return $ticket->created_at?->diffInMinutes($ticket->resolved_at);
+        })->filter()->values();
+
+        $avgResolutionMinutes = $resolutionMinutesPeriod->isNotEmpty()
+            ? $resolutionMinutesPeriod->avg()
+            : null;
+
+        $medianResolutionMinutes = null;
+        if ($resolutionMinutesPeriod->isNotEmpty()) {
+            $sorted = $resolutionMinutesPeriod->sort()->values();
+            $count = $sorted->count();
+            $mid = (int) floor($count / 2);
+            $medianResolutionMinutes = $count % 2 === 0
+                ? ($sorted[$mid - 1] + $sorted[$mid]) / 2
+                : $sorted[$mid];
+        }
+
+        $resolvedInPeriod = $resolvedPeriod->count();
+        $speedPerDay = $days > 0 ? $resolvedInPeriod / $days : 0;
+
+        $chartData = [];
+        $maxResolved = 0;
+        $maxAvgMinutes = 0;
+        $byDay = $resolvedPeriod->groupBy(function (Ticket $ticket) {
+            return $ticket->resolved_at?->format('Y-m-d') ?? '';
+        });
+
+        for ($i = 0; $i < $days; $i++) {
+            $date = $periodStart->copy()->addDays($i);
+            $key = $date->format('Y-m-d');
+            $dayTickets = $byDay->get($key, collect());
+            $resolvedCount = $dayTickets->count();
+            $avgMinutesDay = null;
+            if ($resolvedCount > 0) {
+                $avgMinutesDay = $dayTickets->map(function (Ticket $ticket) {
+                    return $ticket->created_at?->diffInMinutes($ticket->resolved_at);
+                })->filter()->avg();
+            }
+
+            $maxResolved = max($maxResolved, $resolvedCount);
+            $maxAvgMinutes = max($maxAvgMinutes, (int) round($avgMinutesDay ?? 0));
+
+            $chartData[] = [
+                'label' => $date->format('d/m'),
+                'resolved' => $resolvedCount,
+                'avg_minutes' => $avgMinutesDay ? (int) round($avgMinutesDay) : 0,
+            ];
+        }
+
+        $stats = [
+            'resolved_total' => $resolvedTickets->count(),
+            'resolved_period' => $resolvedInPeriod,
+            'avg_resolution' => $this->formatMinutes($avgResolutionMinutes),
+            'median_resolution' => $this->formatMinutes($medianResolutionMinutes),
+            'speed_per_day' => number_format($speedPerDay, 1),
+            'assigned_active' => $activeAssigned->count(),
+            'assigned_total' => $assignedTickets->count(),
+        ];
+
+        return view('dashboard-admin-tech', [
+            'technician' => $technician,
+            'stats' => $stats,
+            'days' => $days,
+            'chartData' => $chartData,
+            'chartMaxResolved' => $maxResolved,
+            'chartMaxAvgMinutes' => $maxAvgMinutes,
+            'assignedTickets' => $activeAssigned,
+            'resolvedTickets' => $resolvedTickets,
+        ]);
+    }
+
+    protected function formatMinutes(?float $minutes): string
+    {
+        if (! $minutes || $minutes <= 0) {
+            return '—';
+        }
+
+        $total = (int) round($minutes);
+        $days = intdiv($total, 1440);
+        $hours = intdiv($total % 1440, 60);
+        $mins = $total % 60;
+
+        $parts = [];
+        if ($days > 0) {
+            $parts[] = $days . 'd';
+        }
+        if ($hours > 0) {
+            $parts[] = $hours . 'h';
+        }
+        if ($mins > 0 && $days === 0) {
+            $parts[] = $mins . 'm';
+        }
+
+        return implode(' ', $parts) ?: '—';
     }
 
     protected function renderDashboard(string $view)

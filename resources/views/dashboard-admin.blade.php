@@ -209,14 +209,20 @@
                                 <div class="text-right break-words">RESUELTOS</div>
                             </div>
                             @foreach($techCards as $tech)
-                                <div class="rounded-xl px-5 py-4 text-white w-full max-w-full" style="background-color: #1F2937;">
-                                    <div class="grid grid-cols-[minmax(0,1.6fr)_minmax(0,0.2fr)_minmax(0,1fr)_minmax(0,1fr)] gap-x-4 items-center text-sm md:text-base font-semibold w-full leading-snug">
+                                <a href="{{ route('admin.dashboard.tech', $tech['id']) }}" class="group relative rounded-xl px-4 py-3 text-white w-full max-w-full block transition hover:opacity-95 overflow-hidden" style="background-color: #1F2937;">
+                                    <div class="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition"></div>
+                                    <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
+                                        <div class="text-[10px] sm:text-xs text-white/90 bg-black/40 px-2 py-1 rounded-full">
+                                            clic para ver detalle por técnico
+                                        </div>
+                                    </div>
+                                    <div class="relative grid grid-cols-[minmax(0,1.6fr)_minmax(0,0.2fr)_minmax(0,1fr)_minmax(0,1fr)] gap-x-4 items-center text-xs md:text-sm font-semibold w-full leading-tight">
                                         <div class="min-w-0 break-words">{{ $tech['name'] }}</div>
                                         <div></div>
                                         <div class="text-right">{{ $tech['assigned'] }}</div>
                                         <div class="text-right">{{ $tech['resolved'] }}</div>
                                     </div>
-                                </div>
+                                </a>
                             @endforeach
                         </div>
                         </div>

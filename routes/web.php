@@ -22,6 +22,9 @@ Route::get('/dashboard', [DashboardController::class, 'index'])
 Route::get('/admin-dashboard', [DashboardController::class, 'admin'])
     ->middleware(['auth', 'active.user', 'force.password', 'admin'])
     ->name('admin.dashboard');
+Route::get('/admin-dashboard/tecnicos/{technician}', [DashboardController::class, 'adminTech'])
+    ->middleware(['auth', 'active.user', 'force.password', 'admin'])
+    ->name('admin.dashboard.tech');
 
 Route::get('/ticket', [TicketController::class, 'create'])
     ->name('ticket.create');

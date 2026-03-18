@@ -47,6 +47,7 @@ class Ticket extends Model
 
     protected $casts = [
         'updated_at_estado_glpi' => 'datetime',
+        'resolved_at' => 'datetime',
     ];
 
     public function locacion(): BelongsTo
