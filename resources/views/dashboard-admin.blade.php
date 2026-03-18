@@ -410,6 +410,14 @@
                                 if (form.dataset.ajaxType === 'classification') {
                                     ticketCard.__x.$data.classificationComplete = true;
                                 }
+                                if (form.dataset.ajaxType === 'resolution') {
+                                    ticketCard.__x.$data.isResolved = true;
+                                    const ticketId = form.dataset.ticketId;
+                                    ticketCard.dataset.statusKey = 'resuelto';
+                                    manager.querySelectorAll(`[data-status-ticket="${ticketId}"]`).forEach((el) => {
+                                        el.textContent = 'resuelto';
+                                    });
+                                }
                             }
 
                             if (window.showToast) {

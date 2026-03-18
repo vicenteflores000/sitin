@@ -68,9 +68,10 @@
                     classificationComplete: {{ $classificationComplete ? 'true' : 'false' }},
                     canManage: {{ $canManage ? 'true' : 'false' }},
                     hasAssignment: {{ $hasAssignment ? 'true' : 'false' }},
+                    isResolved: {{ $isResolved ? 'true' : 'false' }},
                     canResolve() { return this.canManage && this.actionsCount > 0 && this.classificationComplete; }
                 }"
-                x-show="(showResolved || !{{ $isResolved ? 'true' : 'false' }}) && (!query || ($el.dataset.search && $el.dataset.search.includes(query.toLowerCase())))"
+                x-show="(showResolved || !isResolved) && (!query || ($el.dataset.search && $el.dataset.search.includes(query.toLowerCase())))"
                 x-cloak
                 class="group border rounded-lg bg-gray-50 cursor-pointer {{ $isResolved ? 'px-3 py-2 text-[11px] text-gray-500' : 'p-4' }}"
                 data-ticket-id="{{ $ticket->id }}"
@@ -101,7 +102,7 @@
                     </div>
 
                     <div class="text-xs text-gray-500 text-right">
-                        <div>Estado: <span class="{{ $isResolved ? 'font-medium text-gray-500' : 'font-medium text-gray-700' }}">{{ $status }}</span></div>
+                        <div>Estado: <span data-status-ticket="{{ $ticket->id }}" class="{{ $isResolved ? 'font-medium text-gray-500' : 'font-medium text-gray-700' }}">{{ $status }}</span></div>
                         @if(!$isResolved)
                             <div>Asignado: <span data-assigned-ticket="{{ $ticket->id }}">{{ $assignedNames ?: '—' }}</span></div>
                             <div>{{ $ticket->created_at->format('d-m-Y H:i') }}</div>
@@ -259,7 +260,7 @@
                                     <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-700">
                                         <div>
                                             <div class="text-xs text-gray-400">Estado</div>
-                                            <div>{{ $status }}</div>
+                                            <div data-status-ticket="{{ $ticket->id }}">{{ $status }}</div>
                                         </div>
                                         <div>
                                             <div class="text-xs text-gray-400">Asignado</div>
