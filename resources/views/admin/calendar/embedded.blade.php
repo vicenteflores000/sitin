@@ -439,6 +439,12 @@
                     center: 'title',
                     right: 'timeGridDay,timeGridWeek,dayGridMonth',
                 },
+                buttonText: {
+                    today: 'Hoy',
+                    day: 'Día',
+                    week: 'Semana',
+                    month: 'Mes',
+                },
                 editable: true,
                 selectable: true,
                 eventOverlap: false,
