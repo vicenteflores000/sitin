@@ -2,10 +2,10 @@
     <div class="flex items-center justify-between mb-4 gap-3">
         <div class="flex items-center gap-2" x-data="{ openSearch: false }">
             <div
-                class="flex items-center rounded-full bg-gray-100/90 text-gray-600 transition-all duration-200 overflow-hidden h-8 px-2"
+                class="flex items-center rounded-full bg-[#F4F7EE] text-[#6B8E23] border border-[#6B8E23] transition-all duration-200 overflow-hidden h-8 px-2"
                 :class="openSearch ? 'w-64 px-3' : 'w-8 px-2'"
                 @click="openSearch = true; $nextTick(() => $refs.searchInput?.focus())">
-                <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2"
+                <svg class="w-4 h-4 text-[#6B8E23] shrink-0" fill="none" stroke="currentColor" stroke-width="2"
                     viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round"
                         d="M21 21l-4.35-4.35m1.35-5.65a7 7 0 11-14 0 7 7 0 0114 0z" />
