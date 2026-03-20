@@ -43,10 +43,10 @@ class SendTicketMessageDigests extends Command
             }
 
             $recipientEmail = $digest->recipient_email;
-            $recipientUser = User::where('email', $recipientEmail)->first();
-            $link = $recipientUser && $recipientUser->isAdmin()
-                ? route('admin.dashboard', ['ticket' => $ticket->id, 'tab' => 'chat'])
-                : route('dashboard', ['ticket' => $ticket->id, 'tab' => 'chat']);
+            $isRequester = strcasecmp((string) $ticket->usuario_mail, (string) $recipientEmail) === 0;
+            $link = $isRequester
+                ? route('dashboard', ['ticket' => $ticket->id, 'tab' => 'chat'])
+                : route('admin.dashboard', ['ticket' => $ticket->id, 'tab' => 'chat']);
 
             try {
                 Mail::to($recipientEmail)->send(new TicketMessageDigestMail($ticket, $messages, $link));
