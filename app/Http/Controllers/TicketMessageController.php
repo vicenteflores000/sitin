@@ -110,15 +110,13 @@ class TicketMessageController extends Controller
             ->reject(fn ($email) => strtolower((string) $sender->email) === $email)
             ->values();
 
-        $recipients = $recipients
-            ->push('informatica@mdonihue.cl')
-            ->map(fn ($email) => strtolower(trim($email)))
-            ->filter()
-            ->unique()
-            ->values();
-
         if ($recipients->isEmpty()) {
-            return;
+            $isRequester = strcasecmp((string) $ticket->usuario_mail, (string) $sender->email) === 0;
+            if ($isRequester) {
+                $recipients = collect(['informatica@mdonihue.cl']);
+            } else {
+                return;
+            }
         }
 
         $delaySeconds = (int) config('tickets.chat_digest_delay', 60);
