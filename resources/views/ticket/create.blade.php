@@ -38,8 +38,13 @@
             border-radius: 0.75rem;
         }
     </style>
-    <div class="w-full h-screen flex flex-col items-center px-4 bg-[#FAFAF7] overflow-hidden">
-        <div class="w-full max-w-xl py-8 flex flex-col justify-center" style="height: calc(100vh - 2rem);">
+    <style>
+        html, body {
+            overflow: auto;
+        }
+    </style>
+    <div class="w-full h-screen flex flex-col items-center px-4 bg-[#FAFAF7] overflow-y-auto">
+        <div class="w-full max-w-xl py-8 flex flex-col">
 
             <div class="mb-6 text-center">
                 <img src="{{ asset('images/logo.png') }}" alt="Logo Tickets TI" class="mx-auto h-12" style="width: 200px; height: auto;">
