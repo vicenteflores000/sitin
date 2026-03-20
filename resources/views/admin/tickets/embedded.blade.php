@@ -186,6 +186,14 @@
                                         Clasificación
                                     </button>
                                     <button type="button"
+                                        @click="tab = 'chat'"
+                                        :class="tab === 'chat' ? 'bg-white border-gray-200 shadow-sm' : 'bg-transparent border-transparent'"
+                                        class="w-full text-left rounded-lg border px-3 py-2 transition"
+                                        data-chat-tab
+                                        data-chat-ticket="{{ $ticket->id }}">
+                                        Chat
+                                    </button>
+                                    <button type="button"
                                         :disabled="!canManage"
                                         @click="canManage ? (tab = 'resolucion') : null"
                                         :class="tab === 'resolucion' ? 'bg-white border-gray-200 shadow-sm' : 'bg-transparent border-transparent'"
@@ -278,6 +286,39 @@
                                             <div>{{ $ticket->created_at->format('d-m-Y H:i') }}</div>
                                         </div>
                                     </div>
+                                </div>
+
+                                <div x-show="tab === 'chat'" class="space-y-3">
+                                    <div class="flex items-center justify-between">
+                                        <div class="text-sm font-medium text-gray-700">Conversación</div>
+                                        <button type="button"
+                                            class="text-xs text-gray-500 hover:text-gray-700"
+                                            data-chat-refresh
+                                            data-chat-ticket="{{ $ticket->id }}">
+                                            Actualizar
+                                        </button>
+                                    </div>
+                                    <div
+                                        class="h-56 overflow-y-auto rounded-lg border border-gray-200 bg-white p-3 space-y-3 text-sm"
+                                        data-chat-container
+                                        data-chat-ticket="{{ $ticket->id }}"
+                                        data-chat-fetch-url="{{ route('tickets.messages.index', $ticket) }}">
+                                    </div>
+                                    <form
+                                        class="space-y-2"
+                                        data-chat-form
+                                        data-chat-ticket="{{ $ticket->id }}"
+                                        data-chat-send-url="{{ route('tickets.messages.store', $ticket) }}">
+                                        @csrf
+                                        <textarea name="message" rows="2" placeholder="Escribe un mensaje"
+                                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700"></textarea>
+                                        <div class="flex justify-end">
+                                            <button type="submit"
+                                                class="rounded-lg border border-[#6B8E23] px-3 py-2 text-xs text-[#6B8E23] hover:bg-[#F4F7EE]">
+                                                Enviar
+                                            </button>
+                                        </div>
+                                    </form>
                                 </div>
 
                                 <div x-show="tab === 'acciones'">
@@ -534,6 +575,143 @@
                     closeViewer();
                 }
             });
+        });
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
+            async function loadChat(container) {
+                const url = container.dataset.chatFetchUrl;
+                if (!url) return;
+                try {
+                    const response = await fetch(url, {
+                        headers: { 'Accept': 'application/json' }
+                    });
+                    if (!response.ok) return;
+                    const payload = await response.json();
+                    renderChatMessages(container, payload.messages || []);
+                } catch (_) {}
+            }
+
+            function renderChatMessages(container, messages) {
+                container.innerHTML = '';
+                if (!messages.length) {
+                    const empty = document.createElement('div');
+                    empty.className = 'text-xs text-gray-400';
+                    empty.textContent = 'Aún no hay mensajes.';
+                    container.appendChild(empty);
+                    return;
+                }
+                messages.forEach((msg) => {
+                    const wrapper = document.createElement('div');
+                    wrapper.className = msg.is_own ? 'flex justify-end' : 'flex justify-start';
+
+                    const bubble = document.createElement('div');
+                    bubble.className = msg.is_own
+                        ? 'max-w-[80%] rounded-lg bg-[#F4F7EE] border border-[#6B8E23]/30 px-3 py-2'
+                        : 'max-w-[80%] rounded-lg bg-gray-50 border border-gray-200 px-3 py-2';
+
+                    const meta = document.createElement('div');
+                    meta.className = 'text-[11px] text-gray-500 mb-1';
+                    meta.textContent = `${msg.user_name} · ${msg.created_at}`;
+
+                    const body = document.createElement('div');
+                    body.className = 'whitespace-pre-wrap text-sm text-gray-700';
+                    body.textContent = msg.body;
+
+                    bubble.appendChild(meta);
+                    bubble.appendChild(body);
+                    wrapper.appendChild(bubble);
+                    container.appendChild(wrapper);
+                });
+                container.scrollTop = container.scrollHeight;
+            }
+
+            document.querySelectorAll('[data-chat-refresh]').forEach((button) => {
+                button.addEventListener('click', () => {
+                    const ticketId = button.dataset.chatTicket;
+                    const container = document.querySelector(`[data-chat-container][data-chat-ticket=\"${ticketId}\"]`);
+                    if (container) {
+                        loadChat(container);
+                    }
+                });
+            });
+
+            document.querySelectorAll('[data-chat-form]').forEach((form) => {
+                form.addEventListener('submit', async (event) => {
+                    event.preventDefault();
+                    const textarea = form.querySelector('textarea[name=\"message\"]');
+                    const message = textarea?.value?.trim();
+                    if (!message) return;
+                    const url = form.dataset.chatSendUrl;
+                    if (!url) return;
+
+                    try {
+                        const response = await fetch(url, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json',
+                                ...(csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {}),
+                            },
+                            body: JSON.stringify({ message }),
+                        });
+                        if (!response.ok) return;
+                        textarea.value = '';
+                        const ticketId = form.dataset.chatTicket;
+                        const container = document.querySelector(`[data-chat-container][data-chat-ticket=\"${ticketId}\"]`);
+                        if (container) {
+                            loadChat(container);
+                        }
+                    } catch (_) {}
+                });
+            });
+
+            document.querySelectorAll('[data-chat-tab]').forEach((button) => {
+                button.addEventListener('click', () => {
+                    const ticketId = button.dataset.chatTicket;
+                    const container = document.querySelector(`[data-chat-container][data-chat-ticket=\"${ticketId}\"]`);
+                    if (container) {
+                        loadChat(container);
+                    }
+                });
+            });
+
+            function openChatFromUrl() {
+                const params = new URLSearchParams(window.location.search);
+                const ticketId = params.get('ticket');
+                const tab = params.get('tab');
+                if (!ticketId || tab !== 'chat') return;
+
+                const card = document.querySelector(`[data-ticket-id=\"${ticketId}\"]`);
+                if (!card) return;
+
+                const openAndFocusChat = () => {
+                    const chatTab = document.querySelector(`[data-chat-tab][data-chat-ticket=\"${ticketId}\"]`);
+                    if (chatTab) {
+                        chatTab.click();
+                    }
+                    const container = document.querySelector(`[data-chat-container][data-chat-ticket=\"${ticketId}\"]`);
+                    if (container) {
+                        loadChat(container);
+                    }
+                };
+
+                if (card.__x && card.__x.$data) {
+                    card.__x.$data.open = true;
+                } else {
+                    card.click();
+                }
+
+                setTimeout(openAndFocusChat, 150);
+            }
+
+            document.addEventListener('alpine:initialized', () => {
+                setTimeout(openChatFromUrl, 50);
+            });
+            setTimeout(openChatFromUrl, 300);
         });
     </script>
 @endpush

@@ -12,6 +12,7 @@ use App\Models\TicketPart;
 use App\Models\TicketAction;
 use App\Models\TicketSchedule;
 use App\Models\TicketAttachment;
+use App\Models\TicketMessage;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -133,5 +134,10 @@ class Ticket extends Model
     public function attachments(): HasMany
     {
         return $this->hasMany(TicketAttachment::class)->orderByDesc('created_at');
+    }
+
+    public function messages(): HasMany
+    {
+        return $this->hasMany(TicketMessage::class)->orderBy('created_at');
     }
 }

@@ -209,6 +209,40 @@
                                         <div class="text-sm text-gray-500">Aún no se registra resolución.</div>
                                     @endif
                                 </div>
+
+                                <div data-chat-section>
+                                    <div class="text-xs uppercase tracking-wide text-gray-500 mb-2">Chat</div>
+                                    <div class="flex items-center justify-between mb-2">
+                                        <div class="text-sm text-gray-700">Conversación</div>
+                                        <button type="button"
+                                            class="text-xs text-gray-500 hover:text-gray-700"
+                                            data-chat-refresh
+                                            data-chat-ticket="{{ $ticket->id }}">
+                                            Actualizar
+                                        </button>
+                                    </div>
+                                    <div
+                                        class="h-48 overflow-y-auto rounded-lg border border-gray-200 bg-white p-3 space-y-3 text-sm"
+                                        data-chat-container
+                                        data-chat-ticket="{{ $ticket->id }}"
+                                        data-chat-fetch-url="{{ route('tickets.messages.index', $ticket) }}">
+                                    </div>
+                                    <form
+                                        class="space-y-2 mt-3"
+                                        data-chat-form
+                                        data-chat-ticket="{{ $ticket->id }}"
+                                        data-chat-send-url="{{ route('tickets.messages.store', $ticket) }}">
+                                        @csrf
+                                        <textarea name="message" rows="2" placeholder="Escribe un mensaje"
+                                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700"></textarea>
+                                        <div class="flex justify-end">
+                                            <button type="submit"
+                                                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[#6B8E23] text-xs font-medium text-[#6B8E23] bg-[#F4F7EE] hover:bg-[#E9F0DF] transition">
+                                                Enviar
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
                             </div>
                         </div>
 
@@ -274,6 +308,7 @@
                     const modalContent = document.getElementById('ticket-history-content');
                     const modalTitle = document.getElementById('ticket-history-title');
                     const modalClose = document.getElementById('ticket-history-close');
+                    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
                     const attachmentsButton = document.getElementById('ticket-attachments-open');
                     const viewer = document.getElementById('ticket-attachments-viewer');
                     const viewerStage = document.getElementById('attachments-stage');
@@ -290,6 +325,7 @@
                         modalContent.innerHTML = content || '<div class="text-sm text-gray-500">Sin historial disponible.</div>';
                         modal.classList.remove('hidden');
                         modal.setAttribute('aria-hidden', 'false');
+                        initChat(modalContent);
                     }
 
                     function closeModal() {
@@ -318,6 +354,98 @@
                             openModal(title, contentEl ? contentEl.innerHTML : null);
                         });
                     });
+
+                    function initChat(root) {
+                        if (!root) return;
+                        root.querySelectorAll('[data-chat-container]').forEach((container) => {
+                            loadChat(container);
+                        });
+                        root.querySelectorAll('[data-chat-refresh]').forEach((button) => {
+                            button.addEventListener('click', () => {
+                                const ticketId = button.dataset.chatTicket;
+                                const container = root.querySelector(`[data-chat-container][data-chat-ticket=\"${ticketId}\"]`);
+                                if (container) {
+                                    loadChat(container);
+                                }
+                            });
+                        });
+                        root.querySelectorAll('[data-chat-form]').forEach((form) => {
+                            form.addEventListener('submit', async (event) => {
+                                event.preventDefault();
+                                const textarea = form.querySelector('textarea[name=\"message\"]');
+                                const message = textarea?.value?.trim();
+                                if (!message) return;
+                                const url = form.dataset.chatSendUrl;
+                                if (!url) return;
+
+                                try {
+                                    const response = await fetch(url, {
+                                        method: 'POST',
+                                        headers: {
+                                            'Content-Type': 'application/json',
+                                            'Accept': 'application/json',
+                                            ...(csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {}),
+                                        },
+                                        body: JSON.stringify({ message }),
+                                    });
+                                    if (!response.ok) return;
+                                    textarea.value = '';
+                                    const ticketId = form.dataset.chatTicket;
+                                    const container = root.querySelector(`[data-chat-container][data-chat-ticket=\"${ticketId}\"]`);
+                                    if (container) {
+                                        loadChat(container);
+                                    }
+                                } catch (_) {}
+                            });
+                        });
+                    }
+
+                    async function loadChat(container) {
+                        const url = container.dataset.chatFetchUrl;
+                        if (!url) return;
+                        try {
+                            const response = await fetch(url, {
+                                headers: { 'Accept': 'application/json' }
+                            });
+                            if (!response.ok) return;
+                            const payload = await response.json();
+                            renderChatMessages(container, payload.messages || []);
+                        } catch (_) {}
+                    }
+
+                    function renderChatMessages(container, messages) {
+                        container.innerHTML = '';
+                        if (!messages.length) {
+                            const empty = document.createElement('div');
+                            empty.className = 'text-xs text-gray-400';
+                            empty.textContent = 'Aún no hay mensajes.';
+                            container.appendChild(empty);
+                            return;
+                        }
+                        messages.forEach((msg) => {
+                            const wrapper = document.createElement('div');
+                            wrapper.className = msg.is_own ? 'flex justify-end' : 'flex justify-start';
+
+                            const bubble = document.createElement('div');
+                            bubble.className = msg.is_own
+                                ? 'max-w-[80%] rounded-lg bg-[#F4F7EE] border border-[#6B8E23]/30 px-3 py-2'
+                                : 'max-w-[80%] rounded-lg bg-gray-50 border border-gray-200 px-3 py-2';
+
+                            const meta = document.createElement('div');
+                            meta.className = 'text-[11px] text-gray-500 mb-1';
+                            meta.textContent = `${msg.user_name} · ${msg.created_at}`;
+
+                            const body = document.createElement('div');
+                            body.className = 'whitespace-pre-wrap text-sm text-gray-700';
+                            body.textContent = msg.body;
+
+                            bubble.appendChild(meta);
+                            bubble.appendChild(body);
+                            wrapper.appendChild(bubble);
+                            container.appendChild(wrapper);
+                        });
+                        container.scrollTop = container.scrollHeight;
+                    }
 
                     function renderAttachment() {
                         if (!viewerStage) return;
@@ -417,6 +545,28 @@
                             renderAttachment();
                         }
                     });
+
+                    const params = new URLSearchParams(window.location.search);
+                    const ticketParam = params.get('ticket');
+                    const tabParam = params.get('tab');
+                    if (ticketParam) {
+                        const targetCard = document.querySelector(`.ticket-card[data-ticket-id=\"${ticketParam}\"]`);
+                        if (targetCard) {
+                            targetCard.click();
+                            if (tabParam === 'chat') {
+                                setTimeout(() => {
+                                    const chatSection = modalContent?.querySelector('[data-chat-section]');
+                                    if (chatSection) {
+                                        chatSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                        const input = chatSection.querySelector('textarea');
+                                        if (input) {
+                                            input.focus();
+                                        }
+                                    }
+                                }, 200);
+                            }
+                        }
+                    }
                 })();
             </script>
         </div>

@@ -10,6 +10,7 @@ use App\Http\Controllers\AdminErrorLogController;
 use App\Http\Controllers\AllowedDomainController;
 use App\Http\Controllers\TicketController;
 use App\Http\Controllers\TicketAttachmentController;
+use App\Http\Controllers\TicketMessageController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [TicketController::class, 'create'])
@@ -63,6 +64,11 @@ Route::middleware(['auth', 'active.user', 'force.password'])->group(function () 
         ->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])
         ->name('profile.destroy');
+
+    Route::get('/tickets/{ticket}/messages', [TicketMessageController::class, 'index'])
+        ->name('tickets.messages.index');
+    Route::post('/tickets/{ticket}/messages', [TicketMessageController::class, 'store'])
+        ->name('tickets.messages.store');
 });
 
 Route::middleware(['auth', 'active.user', 'force.password', 'admin'])
