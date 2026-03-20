@@ -30,7 +30,8 @@ class AuthenticatedSessionController extends Controller
         $request->session()->regenerate();
 
         if ($request->user()?->must_change_password) {
-            $request->session()->put('url.intended', url()->previous());
+            $intended = $this->safeIntendedUrl(url()->previous(), route('home'));
+            $request->session()->put('url.intended', $intended);
 
             if ($request->expectsJson()) {
                 return response()->json([
@@ -57,5 +58,19 @@ class AuthenticatedSessionController extends Controller
         $request->session()->regenerateToken();
 
         return redirect('/');
+    }
+
+    protected function safeIntendedUrl(?string $url, string $fallback): string
+    {
+        if (! $url) {
+            return $fallback;
+        }
+
+        $host = parse_url($url, PHP_URL_HOST);
+        if ($host && ! hash_equals($host, request()->getHost())) {
+            return $fallback;
+        }
+
+        return $url;
     }
 }

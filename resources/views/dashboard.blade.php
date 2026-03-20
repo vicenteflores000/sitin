@@ -62,8 +62,6 @@
                     </div>
                 </div>
 
-                {{-- Estado GLPI oculto --}}
-
             </div>
 
             {{-- Card principal --}}
@@ -99,15 +97,16 @@
                     <div class="space-y-3 pr-2">
                         @forelse($ultimos as $ticket)
                         @php
-                        $esPendiente = in_array($ticket->estado_glpi, [
-                        'recibido',
-                        'en_proceso',
-                        'en_espera',
-                        ]);
+                        $statusRaw = $ticket->latestStatusEvent?->to_status ?? 'nuevo';
+                        $esPendiente = in_array($statusRaw, [
+                            'nuevo',
+                            'recibido',
+                            'asignado',
+                            'en_progreso',
+                            'standby',
+                        ], true);
 
                         $idCompuesto = $ticket->display_id;
-
-                        $statusRaw = $ticket->estado_glpi ?: $ticket->latestStatusEvent?->to_status;
                         $statusLabel = $statusRaw
                             ? ucfirst(str_replace('_', ' ', $statusRaw))
                             : 'Sin estado';

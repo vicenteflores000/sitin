@@ -4,9 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Ticket;
 use App\Models\User;
-use App\Actions\SyncTicketStatusFromGlpi;
-use Illuminate\Http\RedirectResponse;
-use App\Actions\ReenviarTicketsPendientesAGlpi;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Cache;
@@ -86,7 +83,7 @@ class DashboardController extends Controller
             $statsTickets = Ticket::with([
                 'latestStatusEvent',
                 'currentAssignments',
-            ])->get(['id', 'usuario_mail', 'estado_glpi']);
+            ])->get(['id', 'usuario_mail']);
 
             $domainCards = [
                 'salud' => [
@@ -139,7 +136,7 @@ class DashboardController extends Controller
             $resolvedStatuses = ['resuelto', 'cerrado'];
 
             foreach ($statsTickets as $ticket) {
-                $rawStatus = $ticket->latestStatusEvent?->to_status ?? $ticket->estado_glpi ?? 'nuevo';
+                $rawStatus = $ticket->latestStatusEvent?->to_status ?? 'nuevo';
                 $status = Str::of($rawStatus)->lower()->__toString();
 
                 $totalStats['total']++;
@@ -238,7 +235,7 @@ class DashboardController extends Controller
             ->get();
 
         $activeAssigned = $assignedTickets->filter(function (Ticket $ticket) {
-            $status = $ticket->latestStatusEvent?->to_status ?? $ticket->estado_glpi ?? 'nuevo';
+            $status = $ticket->latestStatusEvent?->to_status ?? 'nuevo';
             return ! in_array($status, ['resuelto', 'cerrado'], true);
         })->values();
 
@@ -383,44 +380,23 @@ class DashboardController extends Controller
 
         $total = $tickets->count();
 
-        $abiertos = $tickets->whereIn('estado_glpi', [
-            'recibido',
-            'en_proceso',
-            'en_espera',
-        ])->count();
+        $abiertos = $tickets->filter(function (Ticket $ticket) {
+            $status = $ticket->latestStatusEvent?->to_status ?? 'nuevo';
+            return ! in_array($status, ['resuelto', 'cerrado'], true);
+        })->count();
 
-        $cerrados = $tickets->where('estado_glpi', 'cerrado')->count();
+        $cerrados = $tickets->filter(function (Ticket $ticket) {
+            $status = $ticket->latestStatusEvent?->to_status ?? 'nuevo';
+            return in_array($status, ['resuelto', 'cerrado'], true);
+        })->count();
 
         $ultimos = $tickets;
-
-            $glpiStatus = 'online';
 
         return view($view, compact(
             'total',
             'abiertos',
             'cerrados',
-            'ultimos',
-            'glpiStatus'
+            'ultimos'
         ));
-    }
-
-    public function reenviarPendientes(
-        ReenviarTicketsPendientesAGlpi $action
-    ) {
-        $result = $action->execute();
-
-        return redirect()
-            ->route('dashboard')
-            ->with('reenviar_result', $result);
-    }
-
-    public function syncEstados(
-        SyncTicketStatusFromGlpi $sync
-    ): RedirectResponse {
-        $result = $sync->execute();
-
-        return redirect()
-            ->route('dashboard')
-            ->with('sync_result', $result);
     }
 }

@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreTicketRequest;
 use App\Services\IaSuggestionService;
 use App\Services\PriorityService;
-use App\Services\GlpiService;
 use App\Models\Ticket;
 use App\Models\Locacion;
 use App\Models\TicketAttachment;
@@ -69,15 +68,12 @@ class TicketController extends Controller
             'usuario_mail' => $user->email,
             'locacion_id' => $request->locacion_id,
             'locacion_hija_texto' => trim($request->input('locacion_hija_texto') ?? ''),
-            'glpi_location_id' => $request->input('glpi_location_id'),
-            'estado_glpi' => null,
 
             // datos ocultos
             'pc' => gethostname(),
             'usuario' => $_SERVER['USERNAME'] ?? null,
             'ip_origen' => $request->ip(),
             'origen' => 'Formulario TI',
-            'estado_envio_glpi' => null,
         ]);
 
         $attachments = $request->file('attachments', []);
@@ -112,20 +108,6 @@ class TicketController extends Controller
         $ticket->update($priorityData);
         $iaData = app(IaSuggestionService::class)->analyze($ticket->descripcion);
         $ticket->update($iaData);
-        $glpiReady = $user->glpi_user_id
-            && $ticket->glpi_location_id
-            && config('services.glpi.url')
-            && config('services.glpi.app_token')
-            && config('services.glpi.user_token');
-
-        if ($glpiReady) {
-            $ticket->update([
-                'estado_glpi' => 'Enviado',
-                'estado_envio_glpi' => 'pendiente',
-            ]);
-            app(GlpiService::class)->createTicket($ticket);
-        }
-
         try {
             Mail::to('informatica@mdonihue.cl')
                 ->cc($user->email)

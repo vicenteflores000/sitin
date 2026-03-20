@@ -32,6 +32,31 @@ class ProfileController extends Controller
         ]);
     }
 
+    public function updateSelf(ProfileUpdateRequest $request): RedirectResponse
+    {
+        $user = $request->user();
+        $data = $request->validated();
+
+        if (! AllowedDomain::allowsEmail($data['email'])) {
+            return back()->withErrors(['email' => 'Dominio no permitido.']);
+        }
+
+        $user->fill([
+            'name' => $data['name'],
+            'email' => $data['email'],
+        ]);
+
+        if ($user->isDirty('email')) {
+            $user->email_verified_at = null;
+        }
+
+        $user->save();
+
+        return redirect()
+            ->route('profile.edit')
+            ->with('status', 'profile-updated');
+    }
+
     public function create()
     {
         return view('admin.profiles.create');
@@ -62,7 +87,6 @@ class ProfileController extends Controller
             'email' => $request->email,
             'password' => Hash::make($plainPassword),
             'must_change_password' => true,
-            'glpi_user_id' => null,
             'role' => $request->role,
             'active' => $request->boolean('active', true),
         ]);

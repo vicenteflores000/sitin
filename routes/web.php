@@ -1,7 +1,6 @@
 <?php
 
 use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\GlpiSyncController;
 use App\Http\Controllers\LocacionController;
 use App\Http\Controllers\PrinterController;
 use App\Http\Controllers\AdminTicketController;
@@ -37,14 +36,6 @@ Route::get('/tickets/attachments/{attachment}', [TicketAttachmentController::cla
     ->name('tickets.attachments.show');
 
 
-Route::middleware(['auth', 'active.user', 'force.password', 'admin'])->group(function () {
-    Route::post('/admin/glpi/sync-locations', [GlpiSyncController::class, 'syncLocations']);
-    Route::post('/dashboard/sync-estados', [DashboardController::class, 'syncEstados'])
-        ->name('dashboard.sync-estados');
-    Route::post('/dashboard/reenviar-pendientes', [DashboardController::class, 'reenviarPendientes'])
-        ->name('dashboard.reenviar-pendientes');
-});
-
 Route::middleware(['auth', 'active.user', 'force.password', 'admin'])
     ->prefix('admin/profiles')
     ->group(function () {
@@ -68,7 +59,7 @@ Route::middleware(['auth', 'active.user', 'force.password', 'admin'])
 Route::middleware(['auth', 'active.user', 'force.password'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'show'])
         ->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])
+    Route::patch('/profile', [ProfileController::class, 'updateSelf'])
         ->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])
         ->name('profile.destroy');

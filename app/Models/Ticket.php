@@ -29,15 +29,10 @@ class Ticket extends Model
         'usuario_mail',
         'ip_origen',
         'origen',
-        'estado_envio_glpi',
         'prioridad',
         'urgencia',
-        'glpi_ticket_id',
-        'payload_glpi',
-        'glpi_location_id',
         'locacion_id',
         'locacion_hija_texto',
-        'estado_glpi',
         'categoria_interna',
         'problem_type',
         'root_cause',
@@ -46,7 +41,6 @@ class Ticket extends Model
     ];
 
     protected $casts = [
-        'updated_at_estado_glpi' => 'datetime',
         'resolved_at' => 'datetime',
     ];
 

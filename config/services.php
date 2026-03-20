@@ -35,12 +35,6 @@ return [
         ],
     ],
 
-    'glpi' => [
-        'url' => env('GLPI_URL'),
-        'app_token' => env('GLPI_APP_TOKEN'),
-        'user_token' => env('GLPI_USER_TOKEN'),
-    ],
-
     'microsoft_graph' => [
         'tenant_id' => env('MICROSOFT_TENANT_ID'),
         'client_id' => env('MICROSOFT_CLIENT_ID'),

@@ -23,7 +23,6 @@ class User extends Authenticatable
         'email',
         'password',
         'must_change_password',
-        'glpi_user_id',
         'role',
         'active',
     ];

@@ -15,7 +15,8 @@ class MicrosoftAuthController extends Controller
 {
     public function redirect(): RedirectResponse
     {
-        session(['url.intended' => url()->previous() ?: route('home')]);
+        $intended = $this->safeIntendedUrl(url()->previous(), route('home'));
+        session(['url.intended' => $intended]);
 
         return Socialite::driver('microsoft')
             ->scopes(['openid', 'profile', 'email'])
@@ -69,7 +70,6 @@ class MicrosoftAuthController extends Controller
                 'email' => $email,
                 'password' => Str::random(32),
                 'must_change_password' => false,
-                'glpi_user_id' => null,
                 'role' => 'user',
                 'active' => true,
             ]);
@@ -88,5 +88,19 @@ class MicrosoftAuthController extends Controller
         Auth::login($user, true);
 
         return redirect()->intended(route('home', absolute: false));
+    }
+
+    protected function safeIntendedUrl(?string $url, string $fallback): string
+    {
+        if (! $url) {
+            return $fallback;
+        }
+
+        $host = parse_url($url, PHP_URL_HOST);
+        if ($host && ! hash_equals($host, request()->getHost())) {
+            return $fallback;
+        }
+
+        return $url;
     }
 }
