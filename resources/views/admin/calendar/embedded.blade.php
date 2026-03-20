@@ -431,6 +431,7 @@
 
             const calendar = new window.FullCalendar.Calendar(calendarEl, {
                 locale: 'es',
+                firstDay: 1,
                 initialView: 'timeGridWeek',
                 height: '100%',
                 expandRows: true,
