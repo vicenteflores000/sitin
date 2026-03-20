@@ -327,10 +327,19 @@
                             return;
                         }
                         const isImage = item.mime && item.mime.startsWith('image/');
+                        viewerStage.innerHTML = '';
                         if (isImage) {
-                            viewerStage.innerHTML = `<img src="${item.url}" alt="${item.name || 'Adjunto'}" class="max-w-[90vw] max-h-[85vh] object-contain">`;
+                            const img = document.createElement('img');
+                            img.src = item.url;
+                            img.alt = item.name || 'Adjunto';
+                            img.className = 'max-w-[90vw] max-h-[85vh] object-contain';
+                            viewerStage.appendChild(img);
                         } else {
-                            viewerStage.innerHTML = `<iframe src="${item.url}" class="w-[90vw] h-[85vh] bg-white" title="${item.name || 'Adjunto'}"></iframe>`;
+                            const frame = document.createElement('iframe');
+                            frame.src = item.url;
+                            frame.title = item.name || 'Adjunto';
+                            frame.className = 'w-[90vw] h-[85vh] bg-white';
+                            viewerStage.appendChild(frame);
                         }
                         if (viewerCaption) {
                             viewerCaption.textContent = `${currentIndex + 1} / ${currentAttachments.length} ${item.name ? '· ' + item.name : ''}`;

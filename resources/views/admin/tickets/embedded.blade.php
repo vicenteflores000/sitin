@@ -479,10 +479,19 @@
             function openViewer({ url, name, mime }) {
                 if (!viewer || !stage) return;
                 const isImage = mime && mime.startsWith('image/');
+                stage.innerHTML = '';
                 if (isImage) {
-                    stage.innerHTML = `<img src="${url}" alt="${name || 'Adjunto'}" class="max-w-[90vw] max-h-[85vh] object-contain">`;
+                    const img = document.createElement('img');
+                    img.src = url;
+                    img.alt = name || 'Adjunto';
+                    img.className = 'max-w-[90vw] max-h-[85vh] object-contain';
+                    stage.appendChild(img);
                 } else {
-                    stage.innerHTML = `<iframe src="${url}" class="w-[90vw] h-[85vh] bg-white" title="${name || 'Adjunto'}"></iframe>`;
+                    const frame = document.createElement('iframe');
+                    frame.src = url;
+                    frame.title = name || 'Adjunto';
+                    frame.className = 'w-[90vw] h-[85vh] bg-white';
+                    stage.appendChild(frame);
                 }
                 if (caption) {
                     caption.textContent = name || '';

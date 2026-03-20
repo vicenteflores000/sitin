@@ -34,6 +34,7 @@ class TicketAttachmentController extends Controller
         $fullPath = Storage::disk($disk)->path($path);
         $mime = $attachment->mime_type ?: 'application/octet-stream';
         $filename = $attachment->original_name ?: basename($path);
+        $filename = str_replace(["\r", "\n"], '', $filename);
 
         return response()->file($fullPath, [
             'Content-Type' => $mime,

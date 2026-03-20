@@ -74,11 +74,17 @@
             if (!root || !message) return;
             const toast = document.createElement('div');
             toast.className = `toast toast-${type || 'info'}`;
-            toast.innerHTML = `
-                <div style="flex:1;">${message}</div>
-                <button type="button" aria-label="Cerrar" style="margin-left:auto;color:inherit;">✕</button>
-            `;
-            const closeBtn = toast.querySelector('button');
+            const content = document.createElement('div');
+            content.style.flex = '1';
+            content.textContent = message;
+            const closeBtn = document.createElement('button');
+            closeBtn.type = 'button';
+            closeBtn.setAttribute('aria-label', 'Cerrar');
+            closeBtn.style.marginLeft = 'auto';
+            closeBtn.style.color = 'inherit';
+            closeBtn.textContent = '✕';
+            toast.appendChild(content);
+            toast.appendChild(closeBtn);
             closeBtn.addEventListener('click', () => {
                 toast.classList.remove('show');
                 setTimeout(() => toast.remove(), 180);
