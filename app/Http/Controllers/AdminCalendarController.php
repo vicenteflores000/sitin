@@ -191,7 +191,8 @@ class AdminCalendarController extends Controller
 
     protected function createOutlookEvent(OutlookCalendarService $outlook, Ticket $ticket, TicketSchedule $schedule): ?string
     {
-        $technician = $ticket->currentAssignment?->technician;
+        $schedule->loadMissing('technician');
+        $technician = $schedule->technician ?? $ticket->currentAssignment?->technician;
         if (! $technician) {
             return null;
         }

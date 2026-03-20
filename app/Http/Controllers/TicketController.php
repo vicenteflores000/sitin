@@ -83,7 +83,7 @@ class TicketController extends Controller
         $attachments = $request->file('attachments', []);
         foreach ($attachments as $file) {
             try {
-                $path = $file->store("tickets/{$ticket->id}", 'public');
+                $path = $file->store("tickets/{$ticket->id}", 'local');
                 TicketAttachment::create([
                     'ticket_id' => $ticket->id,
                     'path' => $path,

@@ -9,6 +9,7 @@ use Illuminate\Http\RedirectResponse;
 use App\Actions\ReenviarTicketsPendientesAGlpi;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Cache;
 
 class DashboardController extends Controller
 {
@@ -26,6 +27,9 @@ class DashboardController extends Controller
             ->orderByDesc('created_at')
             ->get();
 
+        $cacheKey = 'admin-dashboard-stats-v1';
+        $cached = Cache::get($cacheKey);
+
         $adminTickets = Ticket::with([
             'locacion.padre',
             'requester',
@@ -40,60 +44,11 @@ class DashboardController extends Controller
 
         $admins = User::where('role', 'admin')->orderBy('name')->get();
 
-        $domainCards = [
-            'salud' => [
-                'label' => 'Salud',
-                'style' => 'background-color: #2F7FA3;',
-                'text' => 'text-white',
-            ],
-            'educacion' => [
-                'label' => 'Educación',
-                'style' => 'background-color: #B53A3A;',
-                'text' => 'text-white',
-            ],
-            'municipal' => [
-                'label' => 'Municipal',
-                'style' => 'background-color: #2E7A57;',
-                'text' => 'text-white',
-            ],
-        ];
-
         $domainMap = [
             'salud.mdonihue.cl' => 'salud',
             'edudonihue.cl' => 'educacion',
             'mdonihue.cl' => 'municipal',
         ];
-
-        $domainStats = [];
-        foreach ($domainCards as $key => $card) {
-            $domainStats[$key] = [
-                'total' => 0,
-                'nuevo' => 0,
-                'asignado' => 0,
-                'resuelto' => 0,
-            ];
-        }
-
-        $totalStats = [
-            'total' => 0,
-            'nuevo' => 0,
-            'asignado' => 0,
-            'resuelto' => 0,
-        ];
-
-        $techCards = [];
-        foreach ($admins as $adminUser) {
-            $techCards[$adminUser->id] = [
-                'id' => $adminUser->id,
-                'name' => $adminUser->name,
-                'assigned' => 0,
-                'resolved' => 0,
-            ];
-        }
-
-        $newStatuses = ['nuevo', 'recibido'];
-        $assignedStatuses = ['asignado', 'en_progreso', 'en_proceso', 'standby', 'en_espera'];
-        $resolvedStatuses = ['resuelto', 'cerrado'];
 
         $normalizeDomain = function (?string $value): string {
             if (!$value) {
@@ -116,61 +71,136 @@ class DashboardController extends Controller
         };
 
         foreach ($adminTickets as $ticket) {
-            $rawStatus = $ticket->latestStatusEvent?->to_status ?? $ticket->estado_glpi ?? 'nuevo';
-            $status = Str::of($rawStatus)->lower()->__toString();
-
-            $totalStats['total']++;
-            if (in_array($status, $newStatuses, true)) {
-                $totalStats['nuevo']++;
-            }
-            if (in_array($status, $assignedStatuses, true)) {
-                $totalStats['asignado']++;
-            }
-            if (in_array($status, $resolvedStatuses, true)) {
-                $totalStats['resuelto']++;
-            }
-
             $ticketDomainKey = $resolveDomainKeyFromEmail($ticket->usuario_mail);
             $ticket->domain_keys = $ticketDomainKey ? [$ticketDomainKey] : [];
-            if ($ticketDomainKey) {
-                $key = $ticketDomainKey;
-                if (!array_key_exists($key, $domainStats)) {
-                    continue;
-                }
-                $domainStats[$key]['total']++;
-                if (in_array($status, $newStatuses, true)) {
-                    $domainStats[$key]['nuevo']++;
-                }
-                if (in_array($status, $assignedStatuses, true)) {
-                    $domainStats[$key]['asignado']++;
-                }
-                if (in_array($status, $resolvedStatuses, true)) {
-                    $domainStats[$key]['resuelto']++;
-                }
-            }
-
-            $assignedIds = $ticket->currentAssignments?->pluck('technician_id')->filter()->values() ?? collect();
-            foreach ($assignedIds as $technicianId) {
-                if (! isset($techCards[$technicianId])) {
-                    continue;
-                }
-                if (in_array($status, $assignedStatuses, true)) {
-                    $techCards[$technicianId]['assigned']++;
-                }
-                if (in_array($status, $resolvedStatuses, true)) {
-                    $techCards[$technicianId]['resolved']++;
-                }
-            }
         }
 
-        $techCards = array_values($techCards);
-        usort($techCards, function ($a, $b) {
-            $byAssigned = ($b['assigned'] ?? 0) <=> ($a['assigned'] ?? 0);
-            if ($byAssigned !== 0) {
-                return $byAssigned;
+        if ($cached && is_array($cached)) {
+            [
+                $domainCards,
+                $domainStats,
+                $totalStats,
+                $techCards,
+            ] = $cached;
+        } else {
+            $statsTickets = Ticket::with([
+                'latestStatusEvent',
+                'currentAssignments',
+            ])->get(['id', 'usuario_mail', 'estado_glpi']);
+
+            $domainCards = [
+                'salud' => [
+                    'label' => 'Salud',
+                    'style' => 'background-color: #2F7FA3;',
+                    'text' => 'text-white',
+                ],
+                'educacion' => [
+                    'label' => 'Educación',
+                    'style' => 'background-color: #B53A3A;',
+                    'text' => 'text-white',
+                ],
+                'municipal' => [
+                    'label' => 'Municipal',
+                    'style' => 'background-color: #2E7A57;',
+                    'text' => 'text-white',
+                ],
+            ];
+
+
+            $domainStats = [];
+            foreach ($domainCards as $key => $card) {
+                $domainStats[$key] = [
+                    'total' => 0,
+                    'nuevo' => 0,
+                    'asignado' => 0,
+                    'resuelto' => 0,
+                ];
             }
-            return ($b['resolved'] ?? 0) <=> ($a['resolved'] ?? 0);
-        });
+
+            $totalStats = [
+                'total' => 0,
+                'nuevo' => 0,
+                'asignado' => 0,
+                'resuelto' => 0,
+            ];
+
+            $techCards = [];
+            foreach ($admins as $adminUser) {
+                $techCards[$adminUser->id] = [
+                    'id' => $adminUser->id,
+                    'name' => $adminUser->name,
+                    'assigned' => 0,
+                    'resolved' => 0,
+                ];
+            }
+
+            $newStatuses = ['nuevo', 'recibido'];
+            $assignedStatuses = ['asignado', 'en_progreso', 'en_proceso', 'standby', 'en_espera'];
+            $resolvedStatuses = ['resuelto', 'cerrado'];
+
+            foreach ($statsTickets as $ticket) {
+                $rawStatus = $ticket->latestStatusEvent?->to_status ?? $ticket->estado_glpi ?? 'nuevo';
+                $status = Str::of($rawStatus)->lower()->__toString();
+
+                $totalStats['total']++;
+                if (in_array($status, $newStatuses, true)) {
+                    $totalStats['nuevo']++;
+                }
+                if (in_array($status, $assignedStatuses, true)) {
+                    $totalStats['asignado']++;
+                }
+                if (in_array($status, $resolvedStatuses, true)) {
+                    $totalStats['resuelto']++;
+                }
+
+                $ticketDomainKey = $resolveDomainKeyFromEmail($ticket->usuario_mail);
+                if ($ticketDomainKey) {
+                    $key = $ticketDomainKey;
+                    if (!array_key_exists($key, $domainStats)) {
+                        continue;
+                    }
+                    $domainStats[$key]['total']++;
+                    if (in_array($status, $newStatuses, true)) {
+                        $domainStats[$key]['nuevo']++;
+                    }
+                    if (in_array($status, $assignedStatuses, true)) {
+                        $domainStats[$key]['asignado']++;
+                    }
+                    if (in_array($status, $resolvedStatuses, true)) {
+                        $domainStats[$key]['resuelto']++;
+                    }
+                }
+
+                $assignedIds = $ticket->currentAssignments?->pluck('technician_id')->filter()->values() ?? collect();
+                foreach ($assignedIds as $technicianId) {
+                    if (! isset($techCards[$technicianId])) {
+                        continue;
+                    }
+                    if (in_array($status, $assignedStatuses, true)) {
+                        $techCards[$technicianId]['assigned']++;
+                    }
+                    if (in_array($status, $resolvedStatuses, true)) {
+                        $techCards[$technicianId]['resolved']++;
+                    }
+                }
+            }
+
+            $techCards = array_values($techCards);
+            usort($techCards, function ($a, $b) {
+                $byAssigned = ($b['assigned'] ?? 0) <=> ($a['assigned'] ?? 0);
+                if ($byAssigned !== 0) {
+                    return $byAssigned;
+                }
+                return ($b['resolved'] ?? 0) <=> ($a['resolved'] ?? 0);
+            });
+
+            Cache::put($cacheKey, [
+                $domainCards,
+                $domainStats,
+                $totalStats,
+                $techCards,
+            ], now()->addMinutes(2));
+        }
 
         return view('dashboard-admin', compact(
             'calendarTickets',

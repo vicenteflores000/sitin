@@ -244,7 +244,7 @@
                                                 <div class="mt-2 flex flex-wrap gap-2">
                                                     @foreach ($ticket->attachments as $attachment)
                                                         @php
-                                                            $attachmentUrl = Storage::disk('public')->url($attachment->path);
+                                                            $attachmentUrl = route('tickets.attachments.show', $attachment);
                                                             $isImage = str_starts_with($attachment->mime_type ?? '', 'image/');
                                                         @endphp
                                                         <button type="button"

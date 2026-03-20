@@ -216,7 +216,7 @@
                         @php
                             $attachmentsPayload = $ticket->attachments->map(function ($attachment) {
                                 return [
-                                    'url' => Storage::disk('public')->url($attachment->path),
+                                    'url' => route('tickets.attachments.show', $attachment),
                                     'name' => $attachment->original_name,
                                     'mime' => $attachment->mime_type,
                                 ];

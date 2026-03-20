@@ -10,6 +10,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\AdminErrorLogController;
 use App\Http\Controllers\AllowedDomainController;
 use App\Http\Controllers\TicketController;
+use App\Http\Controllers\TicketAttachmentController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [TicketController::class, 'create'])
@@ -30,6 +31,10 @@ Route::get('/ticket', [TicketController::class, 'create'])
     ->name('ticket.create');
 Route::post('/ticket', [TicketController::class, 'store'])
     ->middleware('throttle:5,1');
+
+Route::get('/tickets/attachments/{attachment}', [TicketAttachmentController::class, 'show'])
+    ->middleware(['auth', 'active.user', 'force.password'])
+    ->name('tickets.attachments.show');
 
 
 Route::middleware(['auth', 'active.user', 'force.password', 'admin'])->group(function () {

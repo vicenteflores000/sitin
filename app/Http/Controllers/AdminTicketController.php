@@ -16,6 +16,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\DB;
 
 class AdminTicketController extends Controller
 {
@@ -31,7 +32,7 @@ class AdminTicketController extends Controller
             'parts',
             'actions.creator',
             'attachments',
-        ])->orderByDesc('created_at')->get();
+        ])->orderByDesc('created_at')->paginate(20);
 
         $admins = User::where('role', 'admin')->orderBy('name')->get();
 
@@ -82,41 +83,54 @@ class AdminTicketController extends Controller
             }
         }
 
-        $currentIds = TicketAssignment::where('ticket_id', $ticket->id)
-            ->whereNull('unassigned_at')
-            ->pluck('technician_id');
+        $toAssign = collect();
+        DB::transaction(function () use ($ticket, $technicianIds, &$toAssign) {
+            Ticket::whereKey($ticket->id)->lockForUpdate()->first();
 
-        if ($currentIds->isNotEmpty()) {
-            $toUnassign = $currentIds->diff($technicianIds);
-            if ($toUnassign->isNotEmpty()) {
-                TicketAssignment::where('ticket_id', $ticket->id)
-                    ->whereNull('unassigned_at')
-                    ->whereIn('technician_id', $toUnassign)
-                    ->update(['unassigned_at' => now()]);
+            $currentIds = TicketAssignment::where('ticket_id', $ticket->id)
+                ->whereNull('unassigned_at')
+                ->lockForUpdate()
+                ->pluck('technician_id');
+
+            if ($currentIds->isNotEmpty()) {
+                $toUnassign = $currentIds->diff($technicianIds);
+                if ($toUnassign->isNotEmpty()) {
+                    TicketAssignment::where('ticket_id', $ticket->id)
+                        ->whereNull('unassigned_at')
+                        ->whereIn('technician_id', $toUnassign)
+                        ->update(['unassigned_at' => now()]);
+                }
             }
-        }
 
-        $toAssign = $technicianIds->diff($currentIds);
-        foreach ($toAssign as $technicianId) {
-            TicketAssignment::create([
-                'ticket_id' => $ticket->id,
-                'technician_id' => $technicianId,
-                'assigned_at' => now(),
-                'assigned_by' => auth()->id(),
-            ]);
-        }
-
-        if ($technicianIds->isNotEmpty()) {
-            $this->changeStatus($ticket, 'asignado', null);
-        } else {
-            $currentStatus = $ticket->latestStatusEvent?->to_status;
-            if (! in_array($currentStatus, ['resuelto', 'cerrado'], true)) {
-                $this->changeStatus($ticket, 'nuevo', null);
+            $toAssign = $technicianIds->diff($currentIds);
+            foreach ($toAssign as $technicianId) {
+                TicketAssignment::firstOrCreate(
+                    [
+                        'ticket_id' => $ticket->id,
+                        'technician_id' => $technicianId,
+                        'unassigned_at' => null,
+                    ],
+                    [
+                        'assigned_at' => now(),
+                        'assigned_by' => auth()->id(),
+                    ]
+                );
             }
-        }
 
-        $ticket->loadMissing('locacion.padre', 'currentAssignment.technician');
-        $this->sendAssignmentNotification($ticket);
+            if ($technicianIds->isNotEmpty()) {
+                $this->changeStatus($ticket, 'asignado', null);
+            } else {
+                $currentStatus = $ticket->latestStatusEvent?->to_status;
+                if (! in_array($currentStatus, ['resuelto', 'cerrado'], true)) {
+                    $this->changeStatus($ticket, 'nuevo', null);
+                }
+            }
+        });
+
+        if ($toAssign->isNotEmpty()) {
+            $ticket->loadMissing('locacion.padre', 'currentAssignment.technician');
+            $this->sendAssignmentNotification($ticket);
+        }
 
         return back();
     }
@@ -324,21 +338,27 @@ class AdminTicketController extends Controller
 
     protected function assignTicket(Ticket $ticket, int $technicianId): void
     {
-        $alreadyAssigned = TicketAssignment::where('ticket_id', $ticket->id)
-            ->whereNull('unassigned_at')
-            ->where('technician_id', $technicianId)
-            ->exists();
+        $alreadyAssigned = false;
+        DB::transaction(function () use ($ticket, $technicianId, &$alreadyAssigned) {
+            Ticket::whereKey($ticket->id)->lockForUpdate()->first();
 
-        if (! $alreadyAssigned) {
-            TicketAssignment::create([
-                'ticket_id' => $ticket->id,
-                'technician_id' => $technicianId,
-                'assigned_at' => now(),
-                'assigned_by' => auth()->id(),
-            ]);
-        }
+            $alreadyAssigned = TicketAssignment::where('ticket_id', $ticket->id)
+                ->whereNull('unassigned_at')
+                ->where('technician_id', $technicianId)
+                ->lockForUpdate()
+                ->exists();
 
-        $this->changeStatus($ticket, 'asignado', null);
+            if (! $alreadyAssigned) {
+                TicketAssignment::create([
+                    'ticket_id' => $ticket->id,
+                    'technician_id' => $technicianId,
+                    'assigned_at' => now(),
+                    'assigned_by' => auth()->id(),
+                ]);
+            }
+
+            $this->changeStatus($ticket, 'asignado', null);
+        });
 
         if (! $alreadyAssigned) {
             $ticket->loadMissing('locacion.padre', 'currentAssignment.technician');
