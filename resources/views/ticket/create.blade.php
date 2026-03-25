@@ -1,4 +1,5 @@
 <x-layouts.clean>
+    <div id="ticket-create" x-data="userTheme()" :class="dark ? 'dark-mode' : ''">
     @push('head')
         <style>
             @keyframes dotPulse {
@@ -43,11 +44,104 @@
             overflow: auto;
         }
     </style>
-    <div class="w-full h-screen flex flex-col items-center px-4 bg-[#FAFAF7] overflow-y-auto">
-        <div class="w-full max-w-xl py-8 flex flex-col">
+    <style>
+        #ticket-create.dark-mode .ticket-page {
+            background: radial-gradient(circle at top, #111a2b 0%, #0b1220 55%, #0b1220 100%);
+        }
+        #ticket-create.dark-mode .bg-white {
+            background-color: #0f172a !important;
+        }
+        #ticket-create.dark-mode .border-gray-200,
+        #ticket-create.dark-mode .border-gray-300 {
+            border-color: #1f2a44 !important;
+        }
+        #ticket-create.dark-mode .text-gray-900,
+        #ticket-create.dark-mode .text-gray-800 {
+            color: #f8fafc !important;
+        }
+        #ticket-create.dark-mode .text-gray-700 {
+            color: #e5e7eb !important;
+        }
+        #ticket-create.dark-mode .text-gray-600 {
+            color: #cbd5f5 !important;
+        }
+        #ticket-create.dark-mode .text-gray-500 {
+            color: #9aa6bf !important;
+        }
+        #ticket-create.dark-mode .text-gray-400 {
+            color: #7b879d !important;
+        }
+        #ticket-create.dark-mode .shadow-xl,
+        #ticket-create.dark-mode .shadow-lg,
+        #ticket-create.dark-mode .shadow-sm {
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.45);
+        }
+        #ticket-create.dark-mode input,
+        #ticket-create.dark-mode select,
+        #ticket-create.dark-mode textarea {
+            background-color: #0b1220 !important;
+            color: #e5e7eb !important;
+            border-color: #1f2a44 !important;
+        }
+        #ticket-create.dark-mode .hover\:bg-gray-50:hover {
+            background-color: #1f2a44 !important;
+        }
+        #ticket-create.dark-mode .user-toggle {
+            background-color: #0b1220;
+            border-color: #1f2a44;
+            color: #e5e7eb;
+        }
+        #ticket-create.dark-mode .user-toggle:hover {
+            background-color: #1f2a44;
+        }
+        #ticket-create.dark-mode .user-cta {
+            background-color: #1b2a10;
+            border-color: #7aa23a;
+            color: #d6f5a3;
+        }
+        #ticket-create.dark-mode .user-cta:hover {
+            background-color: #223614;
+        }
+        #ticket-create.dark-mode .select2-container .select2-selection--single {
+            background-color: #0b1220;
+            border-color: #1f2a44;
+        }
+        #ticket-create.dark-mode .select2-container--default .select2-selection--single .select2-selection__rendered {
+            color: #e5e7eb;
+        }
+        #ticket-create.dark-mode .select2-container--default .select2-dropdown {
+            background-color: #0f172a;
+            border-color: #1f2a44;
+        }
+        #ticket-create.dark-mode .select2-container--default .select2-results__option {
+            color: #e5e7eb;
+        }
+        #ticket-create.dark-mode .select2-container--default .select2-results__option--highlighted.select2-results__option--selectable {
+            background-color: #1f2a44;
+        }
+    </style>
+    <div class="ticket-page w-full h-screen flex flex-col items-center px-4 bg-[#FAFAF7] overflow-y-auto">
+        <div class="relative w-full max-w-xl py-8 flex flex-col">
+            <button
+                type="button"
+                @click="toggle()"
+                class="user-toggle absolute top-4 right-4 inline-flex items-center justify-center h-10 w-10 rounded-full border border-gray-300 bg-white text-gray-700 transition"
+                aria-label="Cambiar modo oscuro">
+                <svg x-show="!dark" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2"
+                    viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M12 3v2m0 14v2m9-9h-2M5 12H3m15.364-6.364-1.414 1.414M7.05 16.95l-1.414 1.414m0-12.728 1.414 1.414m10.314 10.314 1.414 1.414" />
+                    <circle cx="12" cy="12" r="4" />
+                </svg>
+                <svg x-show="dark" x-cloak class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2"
+                    viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M21 12.79A9 9 0 1111.21 3a7 7 0 109.79 9.79z" />
+                </svg>
+            </button>
 
             <div class="mb-6 text-center">
-                <img src="{{ asset('images/logo.png') }}" alt="Logo Tickets TI" class="mx-auto h-12" style="width: 200px; height: auto;">
+                <img :src="dark ? '{{ asset('images/logo-white.png') }}' : '{{ asset('images/logo.png') }}'" alt="Logo Tickets TI" class="mx-auto h-12" style="width: 200px; height: auto;">
                 <p class="text-gray-600">Solicitud de soporte TI</p>
             </div>
 
@@ -123,7 +217,7 @@
 
                     <div class="mt-6">
                         <button type="submit" id="ticket-submit"
-                            class="w-full rounded-xl border border-[#6B8E23] px-4 py-2 text-sm font-medium text-[#6B8E23] bg-[#F4F7EE] hover:bg-[#E9F0DF] transition">
+                            class="user-cta w-full rounded-xl border border-[#6B8E23] px-4 py-2 text-sm font-medium text-[#6B8E23] bg-[#F4F7EE] hover:bg-[#E9F0DF] transition">
                             <span id="ticket-submit-text">Enviar solicitud</span>
                         </button>
                     </div>
@@ -350,6 +444,25 @@
         </div>
     </div>
 
+    <script>
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('userTheme', () => ({
+                dark: false,
+                init() {
+                    const stored = localStorage.getItem('sitin-theme');
+                    if (stored) {
+                        this.dark = stored === 'dark';
+                        return;
+                    }
+                    this.dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                },
+                toggle() {
+                    this.dark = !this.dark;
+                    localStorage.setItem('sitin-theme', this.dark ? 'dark' : 'light');
+                }
+            }));
+        });
+    </script>
     <script>
         (function () {
             const ticketForm = document.getElementById('ticket-form');
@@ -772,4 +885,5 @@
 
         })();
     </script>
+    </div>
 </x-layouts.clean>

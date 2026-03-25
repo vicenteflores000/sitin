@@ -2,7 +2,7 @@
     <div class="flex items-center justify-between mb-4 gap-3">
         <div class="flex items-center gap-2" x-data="{ openSearch: false }">
             <div
-                class="flex items-center rounded-full bg-[#F4F7EE] text-[#6B8E23] border border-[#6B8E23] transition-all duration-200 overflow-hidden h-8 px-2"
+                class="admin-search-pill flex items-center rounded-full bg-[#F4F7EE] text-[#6B8E23] border border-[#6B8E23] transition-all duration-200 overflow-hidden h-8 px-2"
                 :class="openSearch ? 'w-64 px-3' : 'w-8 px-2'"
                 @click="openSearch = true; $nextTick(() => $refs.searchInput?.focus())">
                 <svg class="w-4 h-4 text-[#6B8E23] shrink-0" fill="none" stroke="currentColor" stroke-width="2"
@@ -17,7 +17,7 @@
                     @focus="openSearch = true"
                     @blur="openSearch = !!query"
                     :class="openSearch ? 'ml-2 w-full opacity-100' : 'w-0 opacity-0'"
-                    class="bg-transparent text-[11px] text-gray-700 border-0 outline-none ring-0 focus:ring-0 focus:border-transparent focus:outline-none focus-visible:outline-none shadow-none appearance-none transition-all duration-200" />
+                    class="admin-search-input bg-transparent text-[11px] text-gray-700 border-0 outline-none ring-0 focus:ring-0 focus:border-transparent focus:outline-none focus-visible:outline-none shadow-none appearance-none transition-all duration-200" />
             </div>
         </div>
         <button type="button"
@@ -119,21 +119,21 @@
                 </div>
 
                 <div x-show="open" class="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
-                    <div class="bg-white rounded-xl shadow-lg w-full max-w-5xl p-0 overflow-hidden" @click.outside="open = false">
+                    <div class="admin-modal bg-white rounded-xl shadow-lg w-full max-w-5xl p-0 overflow-hidden" @click.outside="open = false">
                         <div class="flex flex-col gap-3 px-6 pt-6 pb-4 border-b border-gray-100">
                         <div class="flex items-center justify-between">
-                            <h3 class="text-lg font-semibold">Gestionar ticket #{{ $ticket->display_id }}</h3>
+                            <h3 class="admin-modal-title text-lg font-semibold">Gestionar ticket #{{ $ticket->display_id }}</h3>
                             <button type="button" @click.stop="open = false" class="text-gray-500 hover:text-gray-700">✕</button>
                         </div>
                         <div class="flex flex-wrap items-center gap-3 text-sm text-gray-600">
                             <div class="flex flex-wrap items-center gap-2">
-                                <div class="rounded-full bg-gray-100 px-3 py-1 text-xs text-gray-700">
+                                <div class="admin-tech-pill rounded-full bg-gray-100 px-3 py-1 text-xs text-gray-700">
                                     Técnicos: <span class="font-medium" data-assigned-ticket="{{ $ticket->id }}">{{ $assignedNames ?: '—' }}</span>
                                 </div>
                                 <div x-data="{ openAssign: false }" class="relative">
                                     <button type="button"
                                         @click.stop="openAssign = !openAssign"
-                                        class="text-xs text-gray-500 hover:text-gray-700 underline">
+                                        class="admin-edit-tech text-xs text-gray-500 hover:text-gray-700 underline">
                                         Editar técnicos
                                     </button>
                                     <div
@@ -208,7 +208,7 @@
                                         :disabled="!canManage"
                                         @click="canManage ? (tab = 'cierre_rapido') : null"
                                         :class="tab === 'cierre_rapido' ? 'ring-2 ring-[#6B8E23]/20' : ''"
-                                        class="w-full inline-flex items-center justify-center gap-1 rounded-full border border-[#6B8E23] px-2.5 py-1.5 text-xs font-medium text-[#6B8E23] bg-[#F4F7EE] hover:bg-[#E9F0DF] transition disabled:opacity-50 disabled:cursor-not-allowed">
+                                        class="admin-cta w-full inline-flex items-center justify-center gap-1 rounded-full border border-[#6B8E23] px-2.5 py-1.5 text-xs font-medium text-[#6B8E23] bg-[#F4F7EE] hover:bg-[#E9F0DF] transition disabled:opacity-50 disabled:cursor-not-allowed">
                                         Cierre Rapido
                                     </button>
                                     <form method="POST" action="{{ route('admin.tickets.status', $ticket) }}" class="w-full" @click.stop>
@@ -346,7 +346,7 @@
                                 </div>
 
                                 <div x-show="tab === 'acciones'">
-                                    <div x-show="!hasAssignment" class="mb-4 rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3 text-xs text-yellow-800">
+                                    <div x-show="!hasAssignment" class="admin-warning mb-4 rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3 text-xs text-yellow-800">
                                         Asigna el ticket a un técnico para poder registrar acciones.
                                     </div>
                                     <div class="flex items-center justify-between mb-3">
@@ -412,7 +412,7 @@
                                 </div>
 
                                 <div x-show="tab === 'clasificacion'">
-                                    <div x-show="!hasAssignment" class="mb-4 rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3 text-xs text-yellow-800">
+                                    <div x-show="!hasAssignment" class="admin-warning mb-4 rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3 text-xs text-yellow-800">
                                         Asigna el ticket a un técnico para poder clasificar.
                                     </div>
                                     <div class="flex items-center justify-between mb-3">
@@ -443,7 +443,7 @@
 
                                 <div x-show="tab === 'resolucion'">
                                     <div class="text-sm font-medium text-gray-700 mb-3">Resolución</div>
-                                    <div x-show="!hasAssignment" class="mb-4 rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3 text-xs text-yellow-800">
+                                    <div x-show="!hasAssignment" class="admin-warning mb-4 rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3 text-xs text-yellow-800">
                                         Asigna el ticket a un técnico para completar la resolución.
                                     </div>
                                     <div x-show="actionsCount === 0" class="mb-4 rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3 text-xs text-yellow-800">

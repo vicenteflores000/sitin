@@ -162,7 +162,7 @@
                                                     :disabled="!canManage"
                                                     @click="canManage ? (tab = 'cierre_rapido') : null"
                                                     :class="tab === 'cierre_rapido' ? 'ring-2 ring-[#6B8E23]/20' : ''"
-                                                    class="w-full inline-flex items-center justify-center gap-1 rounded-full border border-[#6B8E23] px-2.5 py-1.5 text-xs font-medium text-[#6B8E23] bg-[#F4F7EE] hover:bg-[#E9F0DF] transition disabled:opacity-50 disabled:cursor-not-allowed">
+                                                    class="admin-cta w-full inline-flex items-center justify-center gap-1 rounded-full border border-[#6B8E23] px-2.5 py-1.5 text-xs font-medium text-[#6B8E23] bg-[#F4F7EE] hover:bg-[#E9F0DF] transition disabled:opacity-50 disabled:cursor-not-allowed">
                                                     Cierre Rapido
                                                 </button>
                                                 <form method="POST" action="{{ route('admin.tickets.status', $ticket) }}" class="w-full" @click.stop>

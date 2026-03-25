@@ -1,11 +1,158 @@
 <x-layouts.clean>
-    <div id="page-loader" class="fixed inset-0 z-50 flex items-center justify-center bg-[#FAFAF7] transition-opacity duration-200">
+    <div id="admin-dashboard" x-data="adminTheme()" :class="dark ? 'dark-mode' : ''">
+    <style>
+        #admin-dashboard.dark-mode .admin-page {
+            background: radial-gradient(circle at top, #111a2b 0%, #0b1220 55%, #0b1220 100%);
+        }
+        #admin-dashboard.dark-mode .admin-loader {
+            background-color: #0b1220;
+        }
+        #admin-dashboard.dark-mode .bg-white {
+            background-color: #0f172a !important;
+        }
+        #admin-dashboard.dark-mode .bg-gray-50 {
+            background-color: #0b1220 !important;
+        }
+        #admin-dashboard.dark-mode .border-gray-200,
+        #admin-dashboard.dark-mode .border-gray-300 {
+            border-color: #1f2a44 !important;
+        }
+        #admin-dashboard.dark-mode .text-gray-700 {
+            color: #e5e7eb !important;
+        }
+        #admin-dashboard.dark-mode .text-gray-800,
+        #admin-dashboard.dark-mode .text-gray-900 {
+            color: #f8fafc !important;
+        }
+        #admin-dashboard.dark-mode .text-gray-600 {
+            color: #cbd5f5 !important;
+        }
+        #admin-dashboard.dark-mode .text-gray-500 {
+            color: #9aa6bf !important;
+        }
+        #admin-dashboard.dark-mode .text-gray-400 {
+            color: #7b879d !important;
+        }
+        #admin-dashboard.dark-mode .shadow-xl,
+        #admin-dashboard.dark-mode .shadow-lg,
+        #admin-dashboard.dark-mode .shadow-sm {
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.45);
+        }
+        #admin-dashboard.dark-mode input,
+        #admin-dashboard.dark-mode select,
+        #admin-dashboard.dark-mode textarea {
+            background-color: #0b1220 !important;
+            color: #e5e7eb !important;
+            border-color: #1f2a44 !important;
+        }
+        #admin-dashboard.dark-mode .hover\:bg-gray-50:hover {
+            background-color: #1f2a44 !important;
+        }
+        #admin-dashboard.dark-mode .admin-toggle {
+            background-color: #0b1220;
+            border-color: #1f2a44;
+            color: #e5e7eb;
+        }
+        #admin-dashboard.dark-mode .admin-toggle:hover {
+            background-color: #1f2a44;
+        }
+        #admin-dashboard.dark-mode .admin-cta {
+            background-color: #1b2a10;
+            border-color: #7aa23a;
+            color: #d6f5a3;
+        }
+        #admin-dashboard.dark-mode .admin-cta:hover {
+            background-color: #223614;
+        }
+        #admin-dashboard.dark-mode .admin-modal {
+            color: #e5e7eb;
+            border-color: #1f2a44;
+            background-color: #0f172a;
+        }
+        #admin-dashboard.dark-mode .admin-modal-title {
+            color: #f8fafc;
+        }
+        #admin-dashboard.dark-mode .admin-tech-pill {
+            background-color: #111827 !important;
+            color: #e5e7eb !important;
+            border: 1px solid #1f2a44;
+        }
+        #admin-dashboard.dark-mode .admin-edit-tech {
+            color: #cbd5f5 !important;
+        }
+        #admin-dashboard.dark-mode .admin-edit-tech:hover {
+            color: #f8fafc !important;
+        }
+        #admin-dashboard.dark-mode .admin-warning {
+            background-color: #2a1f0f !important;
+            border-color: #6b4b1e !important;
+            color: #f5d39a !important;
+        }
+        #admin-dashboard.dark-mode .admin-search-pill {
+            background-color: #0b1220 !important;
+            border-color: #7aa23a !important;
+            color: #d6f5a3 !important;
+        }
+        #admin-dashboard.dark-mode .admin-search-input {
+            color: #e5e7eb !important;
+        }
+        #admin-dashboard.dark-mode .bg-orange-50 {
+            background-color: #3a2a14 !important;
+        }
+        #admin-dashboard.dark-mode .border-orange-200,
+        #admin-dashboard.dark-mode .border-orange-400 {
+            border-color: #8a5b23 !important;
+        }
+        #admin-dashboard.dark-mode .text-orange-700,
+        #admin-dashboard.dark-mode .text-orange-800,
+        #admin-dashboard.dark-mode .text-orange-600 {
+            color: #f5b868 !important;
+        }
+        #admin-dashboard.dark-mode .fc {
+            color: #dbe4f3;
+        }
+        #admin-dashboard.dark-mode .fc .fc-toolbar-title {
+            color: #dbe4f3;
+        }
+        #admin-dashboard.dark-mode .fc .fc-button {
+            background: #0b1220;
+            border: 1px solid #1f2a44;
+            color: #d6f5a3;
+        }
+        #admin-dashboard.dark-mode .fc .fc-button:hover {
+            background: #1f2a44;
+            border-color: #2b3b5e;
+            color: #e5f5c5;
+        }
+        #admin-dashboard.dark-mode .fc .fc-button-primary:not(:disabled).fc-button-active {
+            background: #7aa23a;
+            border-color: #7aa23a;
+            color: #0b1220;
+        }
+        #admin-dashboard.dark-mode .fc .fc-daygrid-day-number,
+        #admin-dashboard.dark-mode .fc .fc-timegrid-slot-label,
+        #admin-dashboard.dark-mode .fc .fc-col-header-cell-cushion {
+            color: #a9b8d4;
+        }
+        #admin-dashboard.dark-mode .fc .fc-scrollgrid,
+        #admin-dashboard.dark-mode .fc .fc-scrollgrid-section > td,
+        #admin-dashboard.dark-mode .fc .fc-timegrid-slot,
+        #admin-dashboard.dark-mode .fc .fc-timegrid-axis,
+        #admin-dashboard.dark-mode .fc .fc-daygrid-day {
+            border-color: #1f2a44;
+        }
+        #admin-dashboard.dark-mode .fc .fc-timegrid-now-indicator-line,
+        #admin-dashboard.dark-mode .fc .fc-timegrid-now-indicator-arrow {
+            border-color: #f97316;
+        }
+    </style>
+    <div id="page-loader" class="admin-loader fixed inset-0 z-50 flex items-center justify-center bg-[#FAFAF7] transition-opacity duration-200">
         <div class="h-10 w-10 rounded-full border-4 border-gray-200 border-t-gray-500 animate-spin"></div>
     </div>
-    <div class="w-full h-screen flex flex-col items-center px-4 bg-[#FAFAF7] overflow-hidden">
+    <div class="admin-page w-full h-screen flex flex-col items-center px-4 bg-[#FAFAF7] overflow-hidden">
         <div class="w-full max-w-7xl py-8 flex flex-col" style="height: calc(100vh - 2rem);">
             <div class="mb-3 text-center">
-                <img src="{{ asset('images/logo.png') }}" alt="Logo Tickets TI" class="mx-auto h-8" style="width: 130px; height: auto;">
+                <img :src="dark ? '{{ asset('images/logo-white.png') }}' : '{{ asset('images/logo.png') }}'" alt="Logo Tickets TI" class="admin-logo mx-auto h-8" style="width: 130px; height: auto;">
             </div>
 
             <div class="mb-4 flex items-center justify-between gap-3">
@@ -80,6 +227,23 @@
                     </div>
                 </div>
                 <div class="flex items-center gap-3 ml-auto">
+                    <button
+                        type="button"
+                        @click="toggle()"
+                        class="admin-toggle inline-flex items-center justify-center h-10 w-10 rounded-full border border-gray-300 bg-white text-gray-700 transition"
+                        aria-label="Cambiar modo oscuro">
+                        <svg x-show="!dark" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M12 3v2m0 14v2m9-9h-2M5 12H3m15.364-6.364-1.414 1.414M7.05 16.95l-1.414 1.414m0-12.728 1.414 1.414m10.314 10.314 1.414 1.414" />
+                            <circle cx="12" cy="12" r="4" />
+                        </svg>
+                        <svg x-show="dark" x-cloak class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M21 12.79A9 9 0 1111.21 3a7 7 0 109.79 9.79z" />
+                        </svg>
+                    </button>
                     <div x-data="{ open: false }" class="relative">
                         <button
                             type="button"
@@ -129,7 +293,7 @@
                     </div>
                     <a
                         href="{{ route('ticket.create') }}"
-                        class="inline-flex items-center gap-1.5 px-3 py-2 rounded-full border border-[#6B8E23] text-sm font-medium text-[#6B8E23] bg-[#F4F7EE] hover:bg-[#E9F0DF] transition">
+                        class="admin-cta inline-flex items-center gap-1.5 px-3 py-2 rounded-full border border-[#6B8E23] text-sm font-medium text-[#6B8E23] bg-[#F4F7EE] hover:bg-[#E9F0DF] transition">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2"
                             viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round"
@@ -236,7 +400,27 @@
         </div>
     </div>
 
+    </div>
     @push('scripts')
+        <script>
+            document.addEventListener('alpine:init', () => {
+                Alpine.data('adminTheme', () => ({
+                    dark: false,
+                    init() {
+                        const stored = localStorage.getItem('admin-dashboard-theme');
+                        if (stored) {
+                            this.dark = stored === 'dark';
+                            return;
+                        }
+                        this.dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                    },
+                    toggle() {
+                        this.dark = !this.dark;
+                        localStorage.setItem('admin-dashboard-theme', this.dark ? 'dark' : 'light');
+                    }
+                }));
+            });
+        </script>
         <script>
             document.addEventListener('DOMContentLoaded', () => {
                 const domainChips = Array.from(document.querySelectorAll('[data-domain-filter]'));
