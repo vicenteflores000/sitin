@@ -66,12 +66,12 @@
                             <div>
                                 <div class="text-xs uppercase tracking-wide text-gray-500 mb-2">Estado</div>
                                 <div class="flex flex-nowrap gap-2 overflow-x-auto">
-                                    @foreach(['nuevo', 'asignado', 'resuelto'] as $state)
+                                    @foreach(['nuevo', 'asignado', 'standby', 'resuelto'] as $state)
                                         <button
                                             type="button"
                                             data-status-filter="{{ $state }}"
                                             class="status-chip inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 transition">
-                                            {{ strtoupper(str_replace('_', ' ', $state)) }}
+                                            {{ strtoupper(str_replace('_', ' ', $state === 'standby' ? 'en espera' : $state)) }}
                                         </button>
                                     @endforeach
                                 </div>
