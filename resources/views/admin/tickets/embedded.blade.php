@@ -50,6 +50,9 @@
                 $domainKeysAttr = implode(',', $domainKeys);
                 $statusKey = $status;
                 $isResolved = in_array($status, ['resuelto', 'cerrado'], true);
+                $isStandby = in_array($status, ['standby', 'en_espera'], true);
+                $isCompact = $isResolved || $isStandby;
+                $statusLabel = $status === 'standby' ? 'en espera' : $status;
                 $searchText = strtolower(trim(implode(' ', array_filter([
                     $ticket->display_id,
                     $ticket->usuario_mail,
@@ -57,7 +60,7 @@
                     $ticket->requester?->name,
                     $locacionLabel,
                     $ticket->descripcion,
-                    $status,
+                    $statusLabel,
                 ]))));
             @endphp
             <div
@@ -69,11 +72,12 @@
                     canManage: {{ $canManage ? 'true' : 'false' }},
                     hasAssignment: {{ $hasAssignment ? 'true' : 'false' }},
                     isResolved: {{ $isResolved ? 'true' : 'false' }},
+                    isStandby: {{ $isStandby ? 'true' : 'false' }},
                     canResolve() { return this.canManage && this.actionsCount > 0 && this.classificationComplete; }
                 }"
                 x-show="(showResolved || !isResolved) && (!query || ($el.dataset.search && $el.dataset.search.includes(query.toLowerCase())))"
                 x-cloak
-                class="group border rounded-lg bg-gray-50 cursor-pointer {{ $isResolved ? 'px-3 py-2 text-[11px] text-gray-500' : 'p-4' }}"
+                class="group border rounded-lg cursor-pointer {{ $isCompact ? 'px-3 py-2 text-[11px]' : 'p-4' }} {{ $isResolved ? 'bg-gray-50 text-gray-500 border-gray-200' : ($isStandby ? 'bg-orange-50 text-orange-800 border-orange-200' : 'bg-gray-50 border-gray-200') }}"
                 data-ticket-id="{{ $ticket->id }}"
                 data-domain-keys="{{ $domainKeysAttr }}"
                 data-technician-ids="{{ $assignedIdsAttr }}"
@@ -87,11 +91,11 @@
                         @php
                             $requesterName = $ticket->usuario ?: ($ticket->requester?->name ?? 'Sin nombre');
                         @endphp
-                        <div class="{{ $isResolved ? 'font-medium text-gray-500' : 'font-medium text-gray-800' }}">
+                        <div class="{{ $isResolved ? 'font-medium text-gray-500' : ($isStandby ? 'font-medium text-orange-800' : 'font-medium text-gray-800') }}">
                             #{{ $ticket->display_id }} · {{ $requesterName }}
                         </div>
-                        @if($isResolved)
-                            <div class="text-[11px] text-gray-500">
+                        @if($isCompact)
+                            <div class="text-[11px] {{ $isStandby ? 'text-orange-600' : 'text-gray-500' }}">
                                 {{ $ticket->usuario_mail }}
                             </div>
                         @else
@@ -102,15 +106,15 @@
                     </div>
 
                     <div class="text-xs text-gray-500 text-right">
-                        <div>Estado: <span data-status-ticket="{{ $ticket->id }}" class="{{ $isResolved ? 'font-medium text-gray-500' : 'font-medium text-gray-700' }}">{{ $status }}</span></div>
-                        @if(!$isResolved)
+                        <div>Estado: <span data-status-ticket="{{ $ticket->id }}" class="{{ $isResolved ? 'font-medium text-gray-500' : ($isStandby ? 'font-medium text-orange-700' : 'font-medium text-gray-700') }}">{{ $statusLabel }}</span></div>
+                        @if(!$isCompact)
                             <div>Asignado: <span data-assigned-ticket="{{ $ticket->id }}">{{ $assignedNames ?: '—' }}</span></div>
                             <div>{{ $ticket->created_at->format('d-m-Y H:i') }}</div>
                         @endif
                     </div>
                 </div>
 
-                <div class="{{ $isResolved ? 'mt-1' : 'mt-3' }} text-[10px] text-gray-400 opacity-0 group-hover:opacity-100 transition">
+                <div class="{{ $isCompact ? 'mt-1' : 'mt-3' }} text-[10px] text-gray-400 opacity-0 group-hover:opacity-100 transition">
                     Clic para ver las acciones
                 </div>
 
@@ -207,6 +211,26 @@
                                         class="w-full inline-flex items-center justify-center gap-1 rounded-full border border-[#6B8E23] px-2.5 py-1.5 text-xs font-medium text-[#6B8E23] bg-[#F4F7EE] hover:bg-[#E9F0DF] transition disabled:opacity-50 disabled:cursor-not-allowed">
                                         Cierre Rapido
                                     </button>
+                                    <form method="POST" action="{{ route('admin.tickets.status', $ticket) }}" class="w-full" @click.stop>
+                                        @csrf
+                                        <input type="hidden" name="to_status" :value="isStandby ? 'standby' : (hasAssignment ? 'asignado' : 'nuevo')">
+                                        <input type="hidden" name="reason" :value="isStandby ? 'Ticket en espera' : ''">
+                                        <label
+                                            class="w-full inline-flex items-center justify-between gap-2 rounded-full border border-orange-400 px-2.5 py-1.5 text-xs font-medium text-orange-700 bg-orange-50 hover:bg-orange-100 transition"
+                                            :class="(!canManage || isResolved) ? 'opacity-50 cursor-not-allowed' : ''">
+                                            <span>Ticket en Espera</span>
+                                            <span class="relative inline-flex h-4 w-8 items-center rounded-full bg-orange-200 transition">
+                                                <span
+                                                    class="inline-block h-3 w-3 transform rounded-full bg-white shadow transition"
+                                                    :class="isStandby ? 'translate-x-4' : 'translate-x-1'"></span>
+                                            </span>
+                                            <input type="checkbox"
+                                                class="sr-only"
+                                                x-model="isStandby"
+                                                @change="$nextTick(() => $el.form.submit())"
+                                                :disabled="!canManage || isResolved">
+                                        </label>
+                                    </form>
                                     <div x-show="!canResolve()" class="text-[11px] text-gray-400">
                                         Completa acciones y clasificación para habilitar resolución.
                                     </div>
@@ -275,7 +299,7 @@
                                     <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-700">
                                         <div>
                                             <div class="text-xs text-gray-400">Estado</div>
-                                            <div data-status-ticket="{{ $ticket->id }}">{{ $status }}</div>
+                                            <div data-status-ticket="{{ $ticket->id }}">{{ $statusLabel }}</div>
                                         </div>
                                         <div>
                                             <div class="text-xs text-gray-400">Asignado</div>
