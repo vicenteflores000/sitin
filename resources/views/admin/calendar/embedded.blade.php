@@ -129,6 +129,71 @@
         .fc .fc-daygrid-event-harness {
             margin-top: 1px;
         }
+
+        html.dark-mode .fc {
+            color: #dbe4f3;
+        }
+
+        html.dark-mode .fc .fc-toolbar-title {
+            color: #dbe4f3;
+        }
+
+        html.dark-mode .fc .fc-button {
+            background: #0b1220;
+            border: 1px solid #1f2a44;
+            color: #d6f5a3;
+        }
+
+        html.dark-mode .fc .fc-button:hover {
+            background: #1f2a44;
+            border-color: #2b3b5e;
+            color: #e5f5c5;
+        }
+
+        html.dark-mode .fc .fc-button-primary:not(:disabled).fc-button-active {
+            background: #7aa23a;
+            border-color: #7aa23a;
+            color: #0b1220;
+        }
+
+        html.dark-mode .fc .fc-daygrid-day-number,
+        html.dark-mode .fc .fc-timegrid-slot-label,
+        html.dark-mode .fc .fc-col-header-cell-cushion,
+        html.dark-mode .fc .fc-timegrid-axis-cushion {
+            color: #a9b8d4;
+        }
+
+        html.dark-mode .fc .fc-scrollgrid,
+        html.dark-mode .fc .fc-scrollgrid-section > td,
+        html.dark-mode .fc .fc-timegrid-slot,
+        html.dark-mode .fc .fc-timegrid-axis,
+        html.dark-mode .fc .fc-daygrid-day,
+        html.dark-mode .fc .fc-theme-standard td,
+        html.dark-mode .fc .fc-theme-standard th {
+            border-color: #1f2a44;
+        }
+
+        html.dark-mode .fc .fc-timegrid-now-indicator-line,
+        html.dark-mode .fc .fc-timegrid-now-indicator-arrow {
+            border-color: #f97316;
+        }
+
+        html.dark-mode .fc .fc-daygrid-day.fc-day-today,
+        html.dark-mode .fc .fc-timegrid-col.fc-day-today {
+            background-color: rgba(122, 162, 58, 0.18);
+        }
+
+        html.dark-mode .fc .fc-event.event-synced {
+            background: #7aa23a;
+            border-color: #7aa23a;
+            color: #0b1220;
+        }
+
+        html.dark-mode .fc .fc-event.event-error {
+            background: #f87171;
+            border-color: #f87171;
+            color: #0b1220;
+        }
     </style>
 @endpush
 

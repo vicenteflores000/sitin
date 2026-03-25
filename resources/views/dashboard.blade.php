@@ -1,81 +1,76 @@
 <x-layouts.clean>
-    <div id="user-dashboard" x-data="userTheme()" :class="dark ? 'dark-mode' : ''">
+    <div id="user-dashboard">
         <style>
-            #user-dashboard.dark-mode .user-page {
+            html.dark-mode #user-dashboard .user-page {
                 background: radial-gradient(circle at top, #111a2b 0%, #0b1220 55%, #0b1220 100%);
             }
-            #user-dashboard.dark-mode .user-loader {
+            html.dark-mode #user-dashboard .user-loader {
                 background-color: #0b1220;
             }
-            #user-dashboard.dark-mode .user-logo {
-                filter: none;
-            }
-            #user-dashboard.dark-mode .bg-white {
+            html.dark-mode #user-dashboard .bg-white {
                 background-color: #0f172a !important;
             }
-            #user-dashboard.dark-mode .bg-gray-50 {
+            html.dark-mode #user-dashboard .bg-gray-50 {
                 background-color: #0b1220 !important;
             }
-            #user-dashboard.dark-mode .border-gray-200,
-            #user-dashboard.dark-mode .border-gray-300 {
+            html.dark-mode #user-dashboard .border-gray-200,
+            html.dark-mode #user-dashboard .border-gray-300 {
                 border-color: #1f2a44 !important;
             }
-            #user-dashboard.dark-mode .text-gray-900,
-            #user-dashboard.dark-mode .text-gray-800 {
+            html.dark-mode #user-dashboard .text-gray-900,
+            html.dark-mode #user-dashboard .text-gray-800 {
                 color: #f8fafc !important;
             }
-            #user-dashboard.dark-mode .text-gray-700 {
+            html.dark-mode #user-dashboard h1,
+            html.dark-mode #user-dashboard h2,
+            html.dark-mode #user-dashboard h3,
+            html.dark-mode #user-dashboard h4 {
+                color: #f8fafc;
+            }
+            html.dark-mode #user-dashboard .text-gray-700 {
                 color: #e5e7eb !important;
             }
-            #user-dashboard.dark-mode .text-gray-600 {
+            html.dark-mode #user-dashboard .text-gray-600 {
                 color: #cbd5f5 !important;
             }
-            #user-dashboard.dark-mode .text-gray-500 {
+            html.dark-mode #user-dashboard .text-gray-500 {
                 color: #9aa6bf !important;
             }
-            #user-dashboard.dark-mode .text-gray-400 {
+            html.dark-mode #user-dashboard .text-gray-400 {
                 color: #7b879d !important;
             }
-            #user-dashboard.dark-mode .shadow-xl,
-            #user-dashboard.dark-mode .shadow-lg,
-            #user-dashboard.dark-mode .shadow-sm {
+            html.dark-mode #user-dashboard .shadow-xl,
+            html.dark-mode #user-dashboard .shadow-lg,
+            html.dark-mode #user-dashboard .shadow-sm {
                 box-shadow: 0 20px 40px rgba(0, 0, 0, 0.45);
             }
-            #user-dashboard.dark-mode input,
-            #user-dashboard.dark-mode select,
-            #user-dashboard.dark-mode textarea {
+            html.dark-mode #user-dashboard input,
+            html.dark-mode #user-dashboard select,
+            html.dark-mode #user-dashboard textarea {
                 background-color: #0b1220 !important;
                 color: #e5e7eb !important;
                 border-color: #1f2a44 !important;
             }
-            #user-dashboard.dark-mode .hover\:bg-gray-50:hover {
+            html.dark-mode #user-dashboard .hover\:bg-gray-50:hover {
                 background-color: #1f2a44 !important;
             }
-            #user-dashboard.dark-mode .user-toggle {
-                background-color: #0b1220;
-                border-color: #1f2a44;
-                color: #e5e7eb;
-            }
-            #user-dashboard.dark-mode .user-toggle:hover {
-                background-color: #1f2a44;
-            }
-            #user-dashboard.dark-mode .user-cta {
+            html.dark-mode #user-dashboard .user-cta {
                 background-color: #1b2a10;
                 border-color: #7aa23a;
                 color: #d6f5a3;
             }
-            #user-dashboard.dark-mode .user-cta:hover {
+            html.dark-mode #user-dashboard .user-cta:hover {
                 background-color: #223614;
             }
-            #user-dashboard.dark-mode .ticket-card {
+            html.dark-mode #user-dashboard .ticket-card {
                 background-color: #0f172a !important;
                 border-color: #1f2a44 !important;
             }
-            #user-dashboard.dark-mode .ticket-card.ticket-pending {
+            html.dark-mode #user-dashboard .ticket-card.ticket-pending {
                 background-color: #132018 !important;
                 border-color: #7aa23a !important;
             }
-            #user-dashboard.dark-mode .ticket-status-chip {
+            html.dark-mode #user-dashboard .ticket-status-chip {
                 background-color: #0b1220 !important;
                 border-color: #1f2a44 !important;
                 color: #cbd5f5 !important;
@@ -88,27 +83,11 @@
 
         {{-- Contenedor principal centrado verticalmente --}}
         <div class="relative w-full max-w-7xl py-8 flex flex-col justify-center" style="height: calc(100vh - 2rem);">
-            <button
-                type="button"
-                @click="toggle()"
-                class="user-toggle absolute top-6 right-6 inline-flex items-center justify-center h-10 w-10 rounded-full border border-gray-300 bg-white text-gray-700 transition"
-                aria-label="Cambiar modo oscuro">
-                <svg x-show="!dark" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2"
-                    viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round"
-                        d="M12 3v2m0 14v2m9-9h-2M5 12H3m15.364-6.364-1.414 1.414M7.05 16.95l-1.414 1.414m0-12.728 1.414 1.414m10.314 10.314 1.414 1.414" />
-                    <circle cx="12" cy="12" r="4" />
-                </svg>
-                <svg x-show="dark" x-cloak class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2"
-                    viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round"
-                        d="M21 12.79A9 9 0 1111.21 3a7 7 0 109.79 9.79z" />
-                </svg>
-            </button>
 
             {{-- Header sobrio --}}
             <div class="mb-10 text-center">
-                <img :src="dark ? '{{ asset('images/logo-white.png') }}' : '{{ asset('images/logo.png') }}'" alt="Logo Tickets TI" class="user-logo mx-auto h-12" style="width: 200px; height: auto;">
+                <img src="{{ asset('images/logo.png') }}" alt="Logo Tickets TI" class="theme-logo-light user-logo mx-auto h-12" style="width: 200px; height: auto;">
+                <img src="{{ asset('images/logo-white.png') }}" alt="Logo Tickets TI" class="theme-logo-dark user-logo mx-auto h-12" style="width: 200px; height: auto;">
                 <p class="text-sm text-gray-500 mt-0">
                     Siempre en tu Línea
                 </p>
@@ -671,25 +650,6 @@
         </div>
     </div>
 
-    <script>
-        document.addEventListener('alpine:init', () => {
-            Alpine.data('userTheme', () => ({
-                dark: false,
-                init() {
-                    const stored = localStorage.getItem('sitin-theme');
-                    if (stored) {
-                        this.dark = stored === 'dark';
-                        return;
-                    }
-                    this.dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                },
-                toggle() {
-                    this.dark = !this.dark;
-                    localStorage.setItem('sitin-theme', this.dark ? 'dark' : 'light');
-                }
-            }));
-        });
-    </script>
     <script>
         window.addEventListener('load', () => {
             const loader = document.getElementById('page-loader');

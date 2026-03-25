@@ -50,7 +50,8 @@
         <div x-data="locacionesDrawer()" class="w-full max-w-6xl py-8 flex flex-col" style="height: calc(100vh - 2rem);">
 
             <div class="mb-6 text-center">
-                <img src="{{ asset('images/logo.png') }}" alt="Logo Tickets TI" class="mx-auto h-12" style="width: 200px; height: auto;">
+                <img src="{{ asset('images/logo.png') }}" alt="Logo Tickets TI" class="theme-logo-light mx-auto h-12" style="width: 200px; height: auto;">
+                <img src="{{ asset('images/logo-white.png') }}" alt="Logo Tickets TI" class="theme-logo-dark mx-auto h-12" style="width: 200px; height: auto;">
                 <p class="text-gray-600">Organiza establecimientos y locaciones hijas de forma visual.</p>
             </div>
 

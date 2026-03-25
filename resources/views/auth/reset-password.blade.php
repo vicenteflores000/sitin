@@ -3,7 +3,8 @@
         <div class="w-full max-w-md py-8 flex flex-col justify-center" style="height: calc(100vh - 2rem);">
 
             <div class="mb-6 text-center">
-                <img src="{{ asset('images/logo.png') }}" alt="Logo Tickets TI" class="mx-auto h-12" style="width: 200px; height: auto;">
+                <img src="{{ asset('images/logo.png') }}" alt="Logo Tickets TI" class="theme-logo-light mx-auto h-12" style="width: 200px; height: auto;">
+                <img src="{{ asset('images/logo-white.png') }}" alt="Logo Tickets TI" class="theme-logo-dark mx-auto h-12" style="width: 200px; height: auto;">
                 <p class="text-gray-600">Crear nueva contraseña</p>
             </div>
 

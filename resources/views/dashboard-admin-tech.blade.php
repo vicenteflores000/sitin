@@ -2,7 +2,10 @@
     <div class="w-full h-screen flex flex-col items-center px-4 bg-[#FAFAF7] overflow-hidden">
         <div class="w-full max-w-7xl py-8 flex flex-col" style="height: calc(100vh - 2rem);">
             <div class="mb-4 flex items-center justify-between">
-                <img src="{{ asset('images/logo.png') }}" alt="Logo Tickets TI" class="h-8" style="width: 130px; height: auto;">
+                <div>
+                    <img src="{{ asset('images/logo.png') }}" alt="Logo Tickets TI" class="theme-logo-light h-8" style="width: 130px; height: auto;">
+                    <img src="{{ asset('images/logo-white.png') }}" alt="Logo Tickets TI" class="theme-logo-dark h-8" style="width: 130px; height: auto;">
+                </div>
                 <a href="{{ route('admin.dashboard') }}"
                     class="inline-flex items-center gap-1.5 px-3 py-2 rounded-full border border-gray-300 text-sm text-gray-700 bg-white hover:bg-gray-50 transition">
                     &larr; Volver
