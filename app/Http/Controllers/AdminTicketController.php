@@ -32,6 +32,7 @@ class AdminTicketController extends Controller
             'parts',
             'actions.creator',
             'attachments',
+            'schedules.technician',
         ])->orderByDesc('created_at')->paginate(20);
 
         $admins = User::where('role', 'admin')->orderBy('name')->get();

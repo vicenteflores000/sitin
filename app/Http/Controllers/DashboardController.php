@@ -37,6 +37,7 @@ class DashboardController extends Controller
             'parts',
             'actions.creator',
             'attachments',
+            'schedules.technician',
         ])->orderByDesc('created_at')->get();
 
         $admins = User::where('role', 'admin')->orderBy('name')->get();

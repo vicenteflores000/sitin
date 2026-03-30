@@ -153,6 +153,12 @@
                                                     Chat
                                                 </button>
                                                 <button type="button"
+                                                    @click="tab = 'agenda'"
+                                                    :class="tab === 'agenda' ? 'bg-white border-gray-200 shadow-sm' : 'bg-transparent border-transparent'"
+                                                    class="w-full text-left rounded-lg border px-3 py-2 transition">
+                                                    Agenda
+                                                </button>
+                                                <button type="button"
                                                     :disabled="!canManage"
                                                     @click="canManage ? (tab = 'resolucion') : null"
                                                     :class="tab === 'resolucion' ? 'bg-white border-gray-200 shadow-sm' : 'bg-transparent border-transparent'"
@@ -298,6 +304,32 @@
                                                         </button>
                                                     </div>
                                                 </form>
+                                            </div>
+
+                                            <div x-show="tab === 'agenda'">
+                                                <div class="space-y-3">
+                                                    @forelse($ticket->schedules as $schedule)
+                                                        @php
+                                                            $techName = $schedule->technician?->name ?? 'Sin técnico';
+                                                            $start = $schedule->start_at?->format('d-m-Y H:i') ?? '';
+                                                            $end = $schedule->end_at?->format('d-m-Y H:i') ?? '';
+                                                            $modality = $schedule->modality === 'terreno' ? 'Visita en terreno' : ($schedule->modality === 'remota' ? 'Atención remota' : null);
+                                                        @endphp
+                                                        <div class="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-700">
+                                                            <div class="flex items-center justify-between gap-3">
+                                                                <div class="font-medium">{{ $start }} @if($end) — {{ $end }} @endif</div>
+                                                                @if($modality)
+                                                                    <div class="text-xs text-gray-500">{{ $modality }}</div>
+                                                                @endif
+                                                            </div>
+                                                            <div class="text-xs text-gray-500 mt-1">Técnico: {{ $techName }}</div>
+                                                        </div>
+                                                    @empty
+                                                        <div class="rounded-lg border border-dashed border-gray-300 p-4 text-sm text-gray-500 bg-gray-50">
+                                                            Aún no hay agendamientos registrados.
+                                                        </div>
+                                                    @endforelse
+                                                </div>
                                             </div>
 
                                             <div x-show="tab === 'acciones'">
