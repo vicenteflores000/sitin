@@ -194,6 +194,58 @@
             border-color: #f87171;
             color: #0b1220;
         }
+
+        .select2-container .select2-selection--single {
+            height: 42px;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+        }
+
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            line-height: 40px;
+            padding-left: 12px;
+            font-size: 0.875rem;
+            color: #374151;
+        }
+
+        .select2-container--default .select2-selection--single .select2-selection__arrow {
+            height: 40px;
+            right: 8px;
+        }
+
+        .select2-container--default .select2-dropdown {
+            border-color: #e5e7eb;
+            border-radius: 0.75rem;
+        }
+
+        .ticket-option-desc {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        html.dark-mode .select2-container .select2-selection--single {
+            background-color: #0b1220;
+            border-color: #1f2a44;
+        }
+
+        html.dark-mode .select2-container--default .select2-selection--single .select2-selection__rendered {
+            color: #e5e7eb;
+        }
+
+        html.dark-mode .select2-container--default .select2-dropdown {
+            background-color: #0f172a;
+            border-color: #1f2a44;
+        }
+
+        html.dark-mode .select2-container--default .select2-results__option {
+            color: #e5e7eb;
+        }
+
+        html.dark-mode .select2-container--default .select2-results__option--highlighted.select2-results__option--selectable {
+            background-color: #1f2a44;
+        }
     </style>
 @endpush
 
@@ -235,15 +287,21 @@
 
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Ticket</label>
-                <select id="schedule-ticket" name="ticket_id" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700" required>
+                <select id="schedule-ticket" name="ticket_id" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700" data-enhanced-select required>
                     <option value="">Seleccione...</option>
                     @foreach($tickets as $ticket)
                         @php
                             $loc = $ticket->locacion?->padre?->nombre
                                     ? $ticket->locacion->padre->nombre . ' - ' . $ticket->locacion->nombre
                                     : ($ticket->locacion?->nombre ?? 'Sin ubicación');
+                            $label = '#'.$ticket->display_id.' · '.$loc;
                         @endphp
-                        <option value="{{ $ticket->id }}">#{{ $ticket->display_id }} · {{ $ticket->categoria }} · {{ $loc }}</option>
+                        <option
+                            value="{{ $ticket->id }}"
+                            data-label="{{ $label }}"
+                            data-description="{{ \Illuminate\Support\Str::limit($ticket->descripcion ?? '', 140) }}">
+                            {{ $label }}
+                        </option>
                     @endforeach
                 </select>
             </div>
@@ -344,11 +402,68 @@
             let schedulingInterval = null;
             const schedulingFrames = ['Agendando', 'Agendando .', 'Agendando ..', 'Agendando ...', 'Agendando ..', 'Agendando .'];
             let schedulingIndex = 0;
+            let select2Tries = 0;
+            initTicketSelect();
 
             function toLocalInput(date) {
                 const d = new Date(date);
                 const pad = (n) => String(n).padStart(2, '0');
                 return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+            }
+
+            function formatTicketOption(option) {
+                if (!option.id) {
+                    return option.text;
+                }
+                const el = option.element;
+                const label = el?.dataset?.label || option.text || '';
+                const description = el?.dataset?.description || '';
+                const container = document.createElement('div');
+                const title = document.createElement('div');
+                title.className = 'text-sm font-medium';
+                title.textContent = label;
+                container.appendChild(title);
+                if (description) {
+                    const desc = document.createElement('div');
+                    desc.className = 'ticket-option-desc text-xs text-gray-500';
+                    desc.textContent = description;
+                    container.appendChild(desc);
+                }
+                return container;
+            }
+
+            function formatTicketSelection(option) {
+                if (!option.id) {
+                    return option.text;
+                }
+                const el = option.element;
+                return el?.dataset?.label || option.text;
+            }
+
+            function initTicketSelect() {
+                if (!ticketSelect) {
+                    return;
+                }
+                if (!window.$ || !window.$.fn || !window.$.fn.select2) {
+                    if (select2Tries < 10) {
+                        select2Tries += 1;
+                        setTimeout(initTicketSelect, 200);
+                    }
+                    return;
+                }
+                const $select = window.$(ticketSelect);
+                if ($select.hasClass('select2-hidden-accessible')) {
+                    $select.select2('destroy');
+                }
+                $select.select2({
+                    width: '100%',
+                    placeholder: 'Seleccione...',
+                    allowClear: true,
+                    dropdownParent: window.$('#schedule-modal'),
+                    templateResult: formatTicketOption,
+                    templateSelection: formatTicketSelection,
+                    escapeMarkup: (markup) => markup,
+                });
             }
 
             function startSchedulingAnimation(baseText = 'Agendando') {
