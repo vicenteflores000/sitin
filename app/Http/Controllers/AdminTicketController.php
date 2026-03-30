@@ -143,7 +143,7 @@ class AdminTicketController extends Controller
         }
 
         $data = $request->validate([
-            'to_status' => 'required|in:nuevo,asignado,en_progreso,standby,resuelto,cerrado',
+            'to_status' => 'required|in:nuevo,asignado,agendado,en_progreso,standby,resuelto,cerrado',
             'reason' => 'nullable|string|max:255',
         ]);
 
@@ -323,6 +323,15 @@ class AdminTicketController extends Controller
     protected function changeStatus(Ticket $ticket, string $toStatus, ?string $reason): void
     {
         $current = $ticket->latestStatusEvent;
+        if (! in_array($toStatus, ['resuelto', 'cerrado'], true) && $ticket->schedules()->exists()) {
+            $toStatus = 'agendado';
+            $reason = null;
+        }
+
+        if ($current && $current->to_status === $toStatus) {
+            return;
+        }
+
         if ($current && $current->ended_at === null) {
             $current->update(['ended_at' => now()]);
         }

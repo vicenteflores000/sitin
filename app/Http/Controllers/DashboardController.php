@@ -133,7 +133,7 @@ class DashboardController extends Controller
             }
 
             $newStatuses = ['nuevo', 'recibido'];
-            $assignedStatuses = ['asignado', 'en_progreso', 'en_proceso', 'standby', 'en_espera'];
+            $assignedStatuses = ['asignado', 'agendado', 'en_progreso', 'en_proceso', 'standby', 'en_espera'];
             $resolvedStatuses = ['resuelto', 'cerrado'];
 
             foreach ($statsTickets as $ticket) {

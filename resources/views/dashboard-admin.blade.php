@@ -220,7 +220,7 @@
                             <div>
                                 <div class="text-xs uppercase tracking-wide text-gray-500 mb-2">Estado</div>
                                 <div class="flex flex-nowrap gap-2 overflow-x-auto">
-                                    @foreach(['nuevo', 'asignado', 'standby', 'resuelto'] as $state)
+                                    @foreach(['nuevo', 'asignado', 'agendado', 'standby', 'resuelto'] as $state)
                                         <button
                                             type="button"
                                             data-status-filter="{{ $state }}"

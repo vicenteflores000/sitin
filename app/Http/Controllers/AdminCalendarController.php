@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Ticket;
 use App\Models\TicketSchedule;
+use App\Models\TicketStatusEvent;
 use App\Mail\TicketScheduled;
 use App\Services\OutlookCalendarService;
 use Illuminate\Http\Request;
@@ -65,6 +66,8 @@ class AdminCalendarController extends Controller
             'created_by' => auth()->id(),
         ]);
 
+        $this->ensureAgendadoStatus($ticket);
+
         $eventId = $this->createOutlookEvent($outlook, $ticket, $schedule);
         if ($eventId) {
             $schedule->update([
@@ -102,6 +105,8 @@ class AdminCalendarController extends Controller
             'modality' => $data['modality'] ?? $schedule->modality,
         ]);
 
+        $this->ensureAgendadoStatus($schedule->ticket);
+
         $this->updateOutlookEvent($outlook, $schedule);
 
         $schedule->refresh();
@@ -121,6 +126,8 @@ class AdminCalendarController extends Controller
 
         $this->deleteOutlookEvent($outlook, $schedule);
         $schedule->delete();
+
+        $this->maybeRevertStatusAfterScheduleRemoval($schedule->ticket);
 
         $this->sendScheduleNotification($schedule->ticket, $schedule, 'deleted');
 
@@ -296,5 +303,56 @@ class AdminCalendarController extends Controller
                 'error' => $exception->getMessage(),
             ]);
         }
+    }
+
+    protected function ensureAgendadoStatus(Ticket $ticket): void
+    {
+        $ticket->loadMissing('latestStatusEvent');
+        $currentStatus = $ticket->latestStatusEvent?->to_status;
+
+        if (in_array($currentStatus, ['resuelto', 'cerrado'], true)) {
+            return;
+        }
+
+        if ($currentStatus === 'agendado') {
+            return;
+        }
+
+        $this->changeStatus($ticket, 'agendado', null);
+    }
+
+    protected function maybeRevertStatusAfterScheduleRemoval(Ticket $ticket): void
+    {
+        $ticket->loadMissing('latestStatusEvent', 'currentAssignments');
+        $currentStatus = $ticket->latestStatusEvent?->to_status;
+
+        if ($currentStatus !== 'agendado') {
+            return;
+        }
+
+        $hasSchedules = TicketSchedule::where('ticket_id', $ticket->id)->exists();
+        if ($hasSchedules) {
+            return;
+        }
+
+        $nextStatus = $ticket->currentAssignments()->exists() ? 'asignado' : 'nuevo';
+        $this->changeStatus($ticket, $nextStatus, null);
+    }
+
+    protected function changeStatus(Ticket $ticket, string $toStatus, ?string $reason): void
+    {
+        $current = $ticket->latestStatusEvent;
+        if ($current && $current->ended_at === null) {
+            $current->update(['ended_at' => now()]);
+        }
+
+        TicketStatusEvent::create([
+            'ticket_id' => $ticket->id,
+            'from_status' => $current?->to_status,
+            'to_status' => $toStatus,
+            'started_at' => now(),
+            'changed_by' => auth()->id(),
+            'reason' => $reason,
+        ]);
     }
 }

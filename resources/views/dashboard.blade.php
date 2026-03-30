@@ -181,6 +181,7 @@
                             'recibido',
                             'asignado',
                             'en_progreso',
+                            'agendado',
                             'standby',
                         ], true);
 
