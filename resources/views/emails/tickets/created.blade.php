@@ -35,6 +35,23 @@
                                     <td style="padding: 6px 0; font-weight: bold; width: 120px;">Usuario</td>
                                     <td style="padding: 6px 0;">{{ $ticket->usuario_mail }}</td>
                                 </tr>
+                                @if($ticket->assisted_by)
+                                    <tr>
+                                        <td style="padding: 6px 0; font-weight: bold;">Ticket asistido</td>
+                                        <td style="padding: 6px 0;">
+                                            Creado por {{ $ticket->assistedBy?->name ?? $ticket->assistedBy?->email ?? 'Equipo TI' }}
+                                            @if($ticket->assisted_channel)
+                                                · {{ ucfirst($ticket->assisted_channel) }}
+                                            @endif
+                                        </td>
+                                    </tr>
+                                    @if($ticket->assisted_reason)
+                                        <tr>
+                                            <td style="padding: 6px 0; font-weight: bold;">Motivo</td>
+                                            <td style="padding: 6px 0;">{{ $ticket->assisted_reason }}</td>
+                                        </tr>
+                                    @endif
+                                @endif
                                 <tr>
                                     <td style="padding: 6px 0; font-weight: bold;">Ubicación</td>
                                     <td style="padding: 6px 0;">

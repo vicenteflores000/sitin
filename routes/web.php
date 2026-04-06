@@ -11,6 +11,7 @@ use App\Http\Controllers\AllowedDomainController;
 use App\Http\Controllers\TicketController;
 use App\Http\Controllers\TicketAttachmentController;
 use App\Http\Controllers\TicketMessageController;
+use App\Http\Controllers\AssistedTicketController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [TicketController::class, 'create'])
@@ -30,7 +31,8 @@ Route::get('/admin-dashboard/tecnicos/{technician}', [DashboardController::class
 Route::get('/ticket', [TicketController::class, 'create'])
     ->name('ticket.create');
 Route::post('/ticket', [TicketController::class, 'store'])
-    ->middleware('throttle:5,1');
+    ->middleware('throttle:5,1')
+    ->name('ticket.store');
 
 Route::get('/tickets/attachments/{attachment}', [TicketAttachmentController::class, 'show'])
     ->middleware(['auth', 'active.user', 'force.password'])
@@ -119,6 +121,12 @@ Route::middleware(['auth', 'active.user', 'force.password', 'admin'])
     ->group(function () {
         Route::get('/', [AdminTicketController::class, 'index'])
             ->name('admin.tickets.index');
+        Route::get('/asistido', [AssistedTicketController::class, 'create'])
+            ->name('admin.tickets.assisted.create');
+        Route::get('/asistido/users', [AssistedTicketController::class, 'users'])
+            ->name('admin.tickets.assisted.users');
+        Route::post('/asistido', [AssistedTicketController::class, 'store'])
+            ->name('admin.tickets.assisted.store');
         Route::post('/{ticket}/assign', [AdminTicketController::class, 'assignToMe'])
             ->name('admin.tickets.assign');
         Route::post('/{ticket}/assign-user', [AdminTicketController::class, 'assignUser'])

@@ -39,6 +39,9 @@ class Ticket extends Model
         'root_cause',
         'resolved_by',
         'resolved_at',
+        'assisted_by',
+        'assisted_channel',
+        'assisted_reason',
     ];
 
     protected $casts = [
@@ -58,6 +61,11 @@ class Ticket extends Model
     public function requester(): BelongsTo
     {
         return $this->belongsTo(User::class, 'usuario_mail', 'email');
+    }
+
+    public function assistedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assisted_by');
     }
 
     public function getDisplayIdAttribute(): string

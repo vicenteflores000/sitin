@@ -118,20 +118,59 @@
             background-color: #1f2a44;
         }
     </style>
+    @php
+        $isAssisted = $assisted ?? false;
+        $ticketFormAction = $formAction ?? route('ticket.store');
+    @endphp
     <div class="ticket-page w-full h-screen flex flex-col items-center px-4 bg-[#FAFAF7] overflow-y-auto">
         <div class="relative w-full max-w-xl py-8 flex flex-col">
 
             <div class="mb-6 text-center">
                 <img src="{{ asset('images/logo.png') }}" alt="Logo Tickets TI" class="theme-logo-light mx-auto h-12" style="width: 200px; height: auto;">
                 <img src="{{ asset('images/logo-white.png') }}" alt="Logo Tickets TI" class="theme-logo-dark mx-auto h-12" style="width: 200px; height: auto;">
-                <p class="text-gray-600">Solicitud de soporte TI</p>
+                <p class="text-gray-600">{{ $isAssisted ? 'Ticket asistido' : 'Solicitud de soporte TI' }}</p>
             </div>
 
             <div class="bg-white rounded-xl shadow-xl border border-gray-200 p-6 flex flex-col">
 
-                <form id="ticket-form" method="POST" action="/ticket">
+                <form id="ticket-form" method="POST" action="{{ $ticketFormAction }}">
                     @csrf
                     <div class="grid grid-cols-1 gap-4 pr-2">
+                        @if($isAssisted)
+                            <div class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                                Este ticket se registrará a nombre del funcionario seleccionado y quedará trazabilidad de quién lo creó.
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Funcionario</label>
+                                <select id="assisted_user_select"
+                                    data-users-endpoint="{{ route('admin.tickets.assisted.users') }}"
+                                    class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <option value="">Buscar funcionario...</option>
+                                </select>
+                                <input type="hidden" name="assisted_user_name" id="assisted_user_name" value="{{ old('assisted_user_name') }}">
+                                <input type="hidden" name="assisted_user_email" id="assisted_user_email" value="{{ old('assisted_user_email') }}">
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Canal de solicitud</label>
+                                    <select name="assisted_channel" required
+                                        class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                        <option value="">Seleccione...</option>
+                                        <option value="llamada" @selected(old('assisted_channel') === 'llamada')>Llamada telefónica</option>
+                                        <option value="whatsapp" @selected(old('assisted_channel') === 'whatsapp')>WhatsApp</option>
+                                        <option value="presencial" @selected(old('assisted_channel') === 'presencial')>Presencial</option>
+                                        <option value="correo" @selected(old('assisted_channel') === 'correo')>Correo</option>
+                                        <option value="otro" @selected(old('assisted_channel') === 'otro')>Otro</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Motivo / contexto</label>
+                                    <input type="text" name="assisted_reason" value="{{ old('assisted_reason') }}" required
+                                        placeholder="Ej: Solicitud vía llamada, sin acceso a plataforma"
+                                        class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                            </div>
+                        @endif
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Descripción breve del problema</label>
                             <textarea name="descripcion" maxlength="300" rows="4" required
@@ -200,7 +239,7 @@
                     <div class="mt-6">
                         <button type="submit" id="ticket-submit"
                             class="user-cta w-full rounded-xl border border-[#6B8E23] px-4 py-2 text-sm font-medium text-[#6B8E23] bg-[#F4F7EE] hover:bg-[#E9F0DF] transition">
-                            <span id="ticket-submit-text">Enviar solicitud</span>
+                            <span id="ticket-submit-text">{{ $isAssisted ? 'Crear ticket asistido' : 'Enviar solicitud' }}</span>
                         </button>
                     </div>
 
@@ -447,6 +486,10 @@
             const locacionSuggested = document.querySelectorAll('.locacion-suggested');
             const locacionSuggestedBox = document.getElementById('locacion-suggested');
             const locacionToggles = document.querySelectorAll('.locacion-parent-toggle');
+            const assistedUserSelect = document.getElementById('assisted_user_select');
+            const assistedUserName = document.getElementById('assisted_user_name');
+            const assistedUserEmail = document.getElementById('assisted_user_email');
+            const isAssisted = {{ $isAssisted ? 'true' : 'false' }};
             let requiresAuth = {{ auth()->check() ? 'false' : 'true' }};
             let readyToSubmit = false;
             let authContext = 'ticket';
@@ -454,6 +497,7 @@
             let sessionActive = !requiresAuth;
             let isSubmitting = false;
             let submittingInterval = null;
+            const submitDefaultText = ticketSubmitText ? ticketSubmitText.textContent.trim() : 'Enviar solicitud';
             const submittingFrames = ['Enviando', 'Enviando .', 'Enviando ..', 'Enviando ...', 'Enviando ..', 'Enviando .'];
             let submittingIndex = 0;
             const draftKey = 'sitin_ticket_draft';
@@ -477,7 +521,7 @@
                     submittingInterval = null;
                 }
                 if (ticketSubmitText) {
-                    ticketSubmitText.textContent = 'Enviar solicitud';
+                    ticketSubmitText.textContent = submitDefaultText;
                 }
             }
 
@@ -729,6 +773,11 @@
                     event.preventDefault();
                     return;
                 }
+                if (isAssisted && (!assistedUserName?.value || !assistedUserEmail?.value)) {
+                    event.preventDefault();
+                    showToast('Selecciona un funcionario.');
+                    return;
+                }
                 if (locacionSelect && !locacionSelect.value) {
                     event.preventDefault();
                     showToast('Selecciona una locación.');
@@ -745,6 +794,59 @@
                 localStorage.setItem(submitAfterLoginKey, '1');
                 openModal('ticket');
             });
+
+            function initAssistedSelect() {
+                if (!isAssisted || !assistedUserSelect) {
+                    return;
+                }
+                if (!window.$ || !window.$.fn || !window.$.fn.select2) {
+                    setTimeout(initAssistedSelect, 200);
+                    return;
+                }
+
+                const endpoint = assistedUserSelect.dataset.usersEndpoint;
+                const $select = window.$(assistedUserSelect);
+                if ($select.hasClass('select2-hidden-accessible')) {
+                    $select.select2('destroy');
+                }
+
+                $select.select2({
+                    placeholder: 'Buscar funcionario...',
+                    allowClear: true,
+                    width: '100%',
+                    minimumInputLength: 1,
+                    ajax: {
+                        url: endpoint,
+                        dataType: 'json',
+                        delay: 250,
+                        data: (params) => ({
+                            q: params.term || '',
+                            limit: 50,
+                        }),
+                        processResults: (data) => ({
+                            results: (data || []).map((item) => ({
+                                id: item.id,
+                                text: item.text,
+                                name: item.name,
+                                email: item.email,
+                            })),
+                        }),
+                    },
+                });
+
+                $select.on('select2:select', (event) => {
+                    const data = event.params?.data || {};
+                    if (assistedUserName) assistedUserName.value = data.name || '';
+                    if (assistedUserEmail) assistedUserEmail.value = data.email || '';
+                });
+
+                $select.on('select2:clear', () => {
+                    if (assistedUserName) assistedUserName.value = '';
+                    if (assistedUserEmail) assistedUserEmail.value = '';
+                });
+            }
+
+            initAssistedSelect();
 
             function showToast(message, type = 'error') {
                 if (window.showToast) {
@@ -792,6 +894,13 @@
                     clearDraft();
                     ticketForm.reset();
                     setImpacto('');
+                    if (isAssisted) {
+                        if (assistedUserName) assistedUserName.value = '';
+                        if (assistedUserEmail) assistedUserEmail.value = '';
+                        if (assistedUserSelect && window.$ && window.$.fn && window.$.fn.select2) {
+                            window.$(assistedUserSelect).val(null).trigger('change');
+                        }
+                    }
                     if (locacionSelect && locacionLabel) {
                         locacionSelect.value = '';
                         locacionLabel.textContent = 'Seleccione una locación';
