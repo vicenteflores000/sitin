@@ -148,7 +148,7 @@ class AdminTicketController extends Controller
         ]);
 
         if ($data['to_status'] === 'standby' && empty($data['reason'])) {
-            return back()->withErrors(['reason' => 'Debe indicar un motivo para Standby.']);
+            $data['reason'] = 'Ticket en espera';
         }
 
         $this->changeStatus($ticket, $data['to_status'], $data['reason'] ?? null);
@@ -323,7 +323,7 @@ class AdminTicketController extends Controller
     protected function changeStatus(Ticket $ticket, string $toStatus, ?string $reason): void
     {
         $current = $ticket->latestStatusEvent;
-        if (! in_array($toStatus, ['resuelto', 'cerrado'], true) && $ticket->schedules()->exists()) {
+        if (! in_array($toStatus, ['resuelto', 'cerrado', 'standby'], true) && $ticket->schedules()->exists()) {
             $toStatus = 'agendado';
             $reason = null;
         }

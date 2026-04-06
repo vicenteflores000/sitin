@@ -314,7 +314,7 @@ class AdminCalendarController extends Controller
             return;
         }
 
-        if ($currentStatus === 'agendado') {
+        if ($currentStatus === 'agendado' || $currentStatus === 'standby') {
             return;
         }
 
