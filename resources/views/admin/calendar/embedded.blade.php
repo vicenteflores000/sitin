@@ -357,35 +357,46 @@
 @push('scripts')
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const calendarEl = document.getElementById('calendar');
-            const calendarWrapper = document.getElementById('calendar-wrapper');
-            const calendarError = document.getElementById('calendar-error');
-            const showCalendarError = (message) => {
-                if (calendarError) {
-                    calendarError.innerHTML = message;
-                    calendarError.classList.remove('hidden');
-                }
-                if (calendarEl) {
-                    calendarEl.classList.add('hidden');
-                }
-                if (calendarWrapper) {
-                    calendarWrapper.classList.add('flex', 'items-center', 'justify-center');
-                }
-            };
+            requestAnimationFrame(() => {
+                const calendarEl = document.getElementById('calendar');
+                const calendarWrapper = document.getElementById('calendar-wrapper');
+                const calendarError = document.getElementById('calendar-error');
+                let calendarReadyEmitted = false;
 
-            if (!calendarEl) {
-                return;
-            }
+                const markCalendarReady = () => {
+                    if (calendarReadyEmitted) return;
+                    calendarReadyEmitted = true;
+                    window.dispatchEvent(new CustomEvent('admin-calendar-ready'));
+                };
 
-            if (!window.FullCalendar || !window.FullCalendar.Calendar) {
-                showCalendarError('No se pudieron cargar los archivos del calendario. Ejecuta <span class="font-semibold">npm run build</span> en el servidor y recarga.');
-                return;
-            }
+                const showCalendarError = (message) => {
+                    if (calendarError) {
+                        calendarError.innerHTML = message;
+                        calendarError.classList.remove('hidden');
+                    }
+                    if (calendarEl) {
+                        calendarEl.classList.add('hidden');
+                    }
+                    if (calendarWrapper) {
+                        calendarWrapper.classList.add('flex', 'items-center', 'justify-center');
+                    }
+                    markCalendarReady();
+                };
 
-            if (!window.FullCalendar.DayGrid?.default || !window.FullCalendar.TimeGrid?.default || !window.FullCalendar.Interaction?.default) {
-                showCalendarError('Faltan módulos del calendario. Revisa que <span class="font-semibold">core.min.js</span>, <span class="font-semibold">daygrid.min.js</span>, <span class="font-semibold">timegrid.min.js</span> e <span class="font-semibold">interaction.min.js</span> existan en <span class="font-semibold">public/vendor/fullcalendar</span>.');
-                return;
-            }
+                if (!calendarEl) {
+                    markCalendarReady();
+                    return;
+                }
+
+                if (!window.FullCalendar || !window.FullCalendar.Calendar) {
+                    showCalendarError('No se pudieron cargar los archivos del calendario. Ejecuta <span class="font-semibold">npm run build</span> en el servidor y recarga.');
+                    return;
+                }
+
+                if (!window.FullCalendar.DayGrid?.default || !window.FullCalendar.TimeGrid?.default || !window.FullCalendar.Interaction?.default) {
+                    showCalendarError('Faltan módulos del calendario. Revisa que <span class="font-semibold">core.min.js</span>, <span class="font-semibold">daygrid.min.js</span>, <span class="font-semibold">timegrid.min.js</span> e <span class="font-semibold">interaction.min.js</span> existan en <span class="font-semibold">public/vendor/fullcalendar</span>.');
+                    return;
+                }
             const modal = document.getElementById('schedule-modal');
             const closeBtn = document.getElementById('schedule-close');
             const cancelBtn = document.getElementById('schedule-cancel');
@@ -633,6 +644,11 @@
                 slotMaxTime: '20:00:00',
                 nowIndicator: true,
                 events: '{{ route('admin.calendar.events') }}?scope=all',
+                loading: (isLoading) => {
+                    if (!isLoading) {
+                        markCalendarReady();
+                    }
+                },
                 eventAllow: (dropInfo, draggedEvent) => {
                     return draggedEvent?.extendedProps?.can_edit ?? true;
                 },
@@ -848,6 +864,7 @@
                 }
 
                 closeModal();
+            });
             });
         });
     </script>

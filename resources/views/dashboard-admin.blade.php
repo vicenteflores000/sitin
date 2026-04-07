@@ -515,13 +515,31 @@
             });
         </script>
         <script>
-            window.addEventListener('load', () => {
+            document.addEventListener('DOMContentLoaded', () => {
                 const loader = document.getElementById('page-loader');
                 if (!loader) return;
-                loader.classList.add('opacity-0');
+                let domReady = true;
+                let calendarReady = false;
+
+                const hideLoader = () => {
+                    if (!domReady || !calendarReady) return;
+                    loader.classList.add('opacity-0');
+                    window.setTimeout(() => {
+                        loader.classList.add('hidden');
+                    }, 200);
+                };
+
+                window.addEventListener('admin-calendar-ready', () => {
+                    calendarReady = true;
+                    hideLoader();
+                });
+
                 window.setTimeout(() => {
-                    loader.classList.add('hidden');
-                }, 200);
+                    calendarReady = true;
+                    hideLoader();
+                }, 6000);
+
+                hideLoader();
             });
         </script>
     @endpush

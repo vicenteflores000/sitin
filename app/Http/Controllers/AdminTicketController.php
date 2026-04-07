@@ -40,6 +40,26 @@ class AdminTicketController extends Controller
         return view('admin.tickets.index', compact('tickets', 'admins'));
     }
 
+    public function modal(Ticket $ticket)
+    {
+        $ticket->loadMissing([
+            'locacion.padre',
+            'latestStatusEvent',
+            'currentAssignment.technician',
+            'currentAssignments.technician',
+            'requester',
+            'resolution',
+            'parts',
+            'actions.creator',
+            'attachments',
+            'schedules.technician',
+        ]);
+
+        $admins = User::where('role', 'admin')->orderBy('name')->get();
+
+        return view('admin.tickets.modal', compact('ticket', 'admins'));
+    }
+
     public function assignToMe(Ticket $ticket): RedirectResponse
     {
         $this->assignTicket($ticket, auth()->id());

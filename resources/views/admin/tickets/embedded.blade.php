@@ -1,4 +1,4 @@
-<div id="admin-ticket-manager" data-auth-id="{{ auth()->id() }}" class="bg-white rounded-xl shadow-xl border border-gray-200 p-6 flex flex-col h-full" x-data="{ showResolved: false, query: '' }">
+<div id="admin-ticket-manager" data-auth-id="{{ auth()->id() }}" data-modal-url="{{ route('admin.tickets.modal', ['ticket' => 'TICKET_ID']) }}" class="bg-white rounded-xl shadow-xl border border-gray-200 p-6 flex flex-col h-full" x-data="{ showResolved: false, query: '' }">
     <div class="flex items-center justify-between mb-4 gap-3">
         <div class="flex items-center gap-2" x-data="{ openSearch: false }">
             <div
@@ -42,10 +42,6 @@
                 $assignedIds = $assignedTechs->pluck('technician_id')->all();
                 $assignedIdsAttr = implode(',', $assignedIds);
                 $assignedNames = $assignedTechs->pluck('technician.name')->filter()->join(', ');
-                $hasAssignment = $assignedTechs->isNotEmpty();
-                $canManage = $assignedTechs->contains('technician_id', auth()->id());
-                $classificationComplete = ($ticket->categoria_interna && $ticket->problem_type && $ticket->root_cause);
-                $actionsCount = $ticket->actions->count();
                 $domainKeys = $ticket->domain_keys ?? [];
                 $domainKeysAttr = implode(',', $domainKeys);
                 $statusKey = $status;
@@ -64,26 +60,16 @@
                 ]))));
             @endphp
             <div
-                x-data="{
-                    open: false,
-                    tab: 'antecedentes',
-                    actionsCount: {{ $actionsCount }},
-                    classificationComplete: {{ $classificationComplete ? 'true' : 'false' }},
-                    canManage: {{ $canManage ? 'true' : 'false' }},
-                    hasAssignment: {{ $hasAssignment ? 'true' : 'false' }},
-                    isResolved: {{ $isResolved ? 'true' : 'false' }},
-                    isStandby: {{ $isStandby ? 'true' : 'false' }},
-                    canResolve() { return this.canManage && this.actionsCount > 0 && this.classificationComplete; }
-                }"
-                x-show="(showResolved || !isResolved) && (!query || ($el.dataset.search && $el.dataset.search.includes(query.toLowerCase())))"
+                x-show="(showResolved || !['resuelto', 'cerrado'].includes($el.dataset.statusKey)) && (!query || ($el.dataset.search && $el.dataset.search.includes(query.toLowerCase())))"
                 x-cloak
                 class="group border rounded-lg cursor-pointer {{ $isCompact ? 'px-3 py-2 text-[11px]' : 'p-4' }} {{ $isResolved ? 'bg-gray-50 text-gray-500 border-gray-200' : ($isStandby ? 'bg-orange-50 text-orange-800 border-orange-200' : 'bg-gray-50 border-gray-200') }}"
+                data-ticket-card
                 data-ticket-id="{{ $ticket->id }}"
                 data-domain-keys="{{ $domainKeysAttr }}"
                 data-technician-ids="{{ $assignedIdsAttr }}"
                 data-status-key="{{ $statusKey }}"
                 data-search="{{ $searchText }}"
-                @click="open = true"
+                onclick="window.openAdminTicketModal && window.openAdminTicketModal('{{ $ticket->id }}')"
                 role="button"
                 tabindex="0">
                 <div class="flex items-start justify-between gap-4">
@@ -117,439 +103,21 @@
                 <div class="{{ $isCompact ? 'mt-1' : 'mt-3' }} text-[10px] text-gray-400 opacity-0 group-hover:opacity-100 transition">
                     Clic para ver las acciones
                 </div>
-
-                <div x-show="open" class="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
-                    <div class="admin-modal bg-white rounded-xl shadow-lg w-full max-w-5xl p-0 overflow-hidden" @click.outside="open = false">
-                        <div class="flex flex-col gap-3 px-6 pt-6 pb-4 border-b border-gray-100">
-                        <div class="flex items-center justify-between">
-                            <h3 class="admin-modal-title text-lg font-semibold">Gestionar ticket #{{ $ticket->display_id }}</h3>
-                            <button type="button" @click.stop="open = false" class="text-gray-500 hover:text-gray-700">✕</button>
-                        </div>
-                        <div class="flex flex-wrap items-center gap-3 text-sm text-gray-600">
-                            <div class="flex flex-wrap items-center gap-2">
-                                <div class="admin-tech-pill rounded-full bg-gray-100 px-3 py-1 text-xs text-gray-700">
-                                    Técnicos: <span class="font-medium" data-assigned-ticket="{{ $ticket->id }}">{{ $assignedNames ?: '—' }}</span>
-                                </div>
-                                <div x-data="{ openAssign: false }" class="relative">
-                                    <button type="button"
-                                        @click.stop="openAssign = !openAssign"
-                                        class="admin-edit-tech text-xs text-gray-500 hover:text-gray-700 underline">
-                                        Editar técnicos
-                                    </button>
-                                    <div
-                                        x-show="openAssign"
-                                        x-transition
-                                        @click.outside="openAssign = false"
-                                        class="absolute left-0 mt-2 w-72 max-w-[80vw] rounded-xl border border-gray-200 bg-white p-3 shadow-sm z-50">
-                                        <form method="POST" action="{{ route('admin.tickets.assign-multiple', $ticket) }}" class="space-y-3" @click.stop data-ajax="true" data-ajax-type="assignment" data-ticket-id="{{ $ticket->id }}">
-                                            @csrf
-                                            <div class="max-h-52 overflow-y-auto pr-1 space-y-2">
-                                                @foreach($admins as $adminUser)
-                                                    <label class="flex items-center gap-2 text-xs text-gray-600">
-                                                        <input type="checkbox" name="technician_ids[]"
-                                                            value="{{ $adminUser->id }}"
-                                                            @checked(in_array($adminUser->id, $assignedIds))
-                                                            class="rounded border-gray-300 text-[#6B8E23]">
-                                                        <span>{{ $adminUser->name }}</span>
-                                                    </label>
-                                                @endforeach
-                                            </div>
-                                            <div class="flex justify-end">
-                                                <button type="submit"
-                                                    class="rounded-lg border border-[#6B8E23] px-3 py-2 text-xs text-[#6B8E23] hover:bg-[#F4F7EE]">
-                                                    Guardar
-                                                </button>
-                                            </div>
-                                        </form>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                        <div class="grid grid-cols-1 md:grid-cols-[220px_1fr] gap-0">
-                            <div class="bg-gray-50 border-r border-gray-200 p-4">
-                                <div class="text-[11px] uppercase tracking-wide text-gray-400 mb-3">Secciones</div>
-                                <div class="space-y-2 text-sm text-gray-700">
-                                    <button type="button"
-                                        @click="tab = 'antecedentes'"
-                                        :class="tab === 'antecedentes' ? 'bg-white border-gray-200 shadow-sm' : 'bg-transparent border-transparent'"
-                                        class="w-full text-left rounded-lg border px-3 py-2 transition">
-                                        Antecedentes
-                                    </button>
-                                    <button type="button"
-                                        @click="tab = 'acciones'"
-                                        :class="tab === 'acciones' ? 'bg-white border-gray-200 shadow-sm' : 'bg-transparent border-transparent'"
-                                        class="w-full text-left rounded-lg border px-3 py-2 transition">
-                                        Acciones
-                                    </button>
-                                    <button type="button"
-                                        @click="tab = 'clasificacion'"
-                                        :class="tab === 'clasificacion' ? 'bg-white border-gray-200 shadow-sm' : 'bg-transparent border-transparent'"
-                                        class="w-full text-left rounded-lg border px-3 py-2 transition">
-                                        Clasificación
-                                    </button>
-                                    <button type="button"
-                                        @click="tab = 'chat'"
-                                        :class="tab === 'chat' ? 'bg-white border-gray-200 shadow-sm' : 'bg-transparent border-transparent'"
-                                        class="w-full text-left rounded-lg border px-3 py-2 transition"
-                                        data-chat-tab
-                                        data-chat-ticket="{{ $ticket->id }}">
-                                        Chat
-                                    </button>
-                                    <button type="button"
-                                        @click="tab = 'agenda'"
-                                        :class="tab === 'agenda' ? 'bg-white border-gray-200 shadow-sm' : 'bg-transparent border-transparent'"
-                                        class="w-full text-left rounded-lg border px-3 py-2 transition">
-                                        Agenda
-                                    </button>
-                                    <button type="button"
-                                        :disabled="!canManage"
-                                        @click="canManage ? (tab = 'resolucion') : null"
-                                        :class="tab === 'resolucion' ? 'bg-white border-gray-200 shadow-sm' : 'bg-transparent border-transparent'"
-                                        class="w-full text-left rounded-lg border px-3 py-2 transition disabled:opacity-40 disabled:cursor-not-allowed">
-                                        Resolución
-                                    </button>
-                                    <button type="button"
-                                        :disabled="!canManage"
-                                        @click="canManage ? (tab = 'cierre_rapido') : null"
-                                        :class="tab === 'cierre_rapido' ? 'ring-2 ring-[#6B8E23]/20' : ''"
-                                        class="admin-cta w-full inline-flex items-center justify-center gap-1 rounded-full border border-[#6B8E23] px-2.5 py-1.5 text-xs font-medium text-[#6B8E23] bg-[#F4F7EE] hover:bg-[#E9F0DF] transition disabled:opacity-50 disabled:cursor-not-allowed">
-                                        Cierre Rapido
-                                    </button>
-                                    <form method="POST" action="{{ route('admin.tickets.status', $ticket) }}" class="w-full" @click.stop>
-                                        @csrf
-                                        <input type="hidden" name="to_status" :value="isStandby ? 'standby' : (hasAssignment ? 'asignado' : 'nuevo')">
-                                        <input type="hidden" name="reason" :value="isStandby ? 'Ticket en espera' : ''">
-                                        <label
-                                            class="w-full inline-flex items-center justify-between gap-2 rounded-full border border-orange-400 px-2.5 py-1.5 text-xs font-medium text-orange-700 bg-orange-50 hover:bg-orange-100 transition"
-                                            :class="(!canManage || isResolved) ? 'opacity-50 cursor-not-allowed' : ''">
-                                            <span>Ticket en Espera</span>
-                                            <span class="relative inline-flex h-4 w-8 items-center rounded-full bg-orange-200 transition">
-                                                <span
-                                                    class="inline-block h-3 w-3 transform rounded-full bg-white shadow transition"
-                                                    :class="isStandby ? 'translate-x-4' : 'translate-x-1'"></span>
-                                            </span>
-                                            <input type="checkbox"
-                                                class="sr-only"
-                                                x-model="isStandby"
-                                                @change="$nextTick(() => $el.form.submit())"
-                                                :disabled="!canManage || isResolved">
-                                        </label>
-                                    </form>
-                                    <div x-show="!canResolve()" class="text-[11px] text-gray-400">
-                                        Completa acciones y clasificación para habilitar resolución.
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="p-6">
-                                <div x-show="tab === 'antecedentes'">
-                                    <div class="rounded-xl border border-gray-200 bg-gray-50 p-4">
-                                        <div class="text-[11px] uppercase tracking-wide text-gray-400">Antecedentes entregados por usuario</div>
-
-                                        <div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-700">
-                                            <div>
-                                                <div class="text-xs text-gray-400">Usuario</div>
-                                                <div>{{ $ticket->usuario_mail }}</div>
-                                            </div>
-                                            <div>
-                                                <div class="text-xs text-gray-400">Ubicación</div>
-                                                <div>{{ $locacionLabel }}</div>
-                                            </div>
-                                            <div>
-                                                <div class="text-xs text-gray-400">Categoría</div>
-                                                <div>{{ $ticket->categoria }}</div>
-                                            </div>
-                                            <div>
-                                                <div class="text-xs text-gray-400">Tipo</div>
-                                                <div>{{ $ticket->tipo }}</div>
-                                            </div>
-                                            <div>
-                                                <div class="text-xs text-gray-400">Impacto laboral</div>
-                                                <div>{{ $ticket->impacto }}</div>
-                                            </div>
-                                        </div>
-
-                                        <div class="mt-4">
-                                            <div class="text-xs text-gray-400">Descripción</div>
-                                            <div class="mt-1 text-sm text-gray-700">{{ $ticket->descripcion }}</div>
-                                        </div>
-
-                                        @if ($ticket->attachments->count() > 0)
-                                            <div class="mt-4">
-                                                <div class="text-xs text-gray-400">Adjuntos</div>
-                                                <div class="mt-2 flex flex-wrap gap-2">
-                                                    @foreach ($ticket->attachments as $attachment)
-                                                        @php
-                                                            $attachmentUrl = route('tickets.attachments.show', $attachment);
-                                                            $isImage = str_starts_with($attachment->mime_type ?? '', 'image/');
-                                                        @endphp
-                                                        <button type="button"
-                                                            class="admin-attachment-thumb h-[10px] w-[10px] rounded-sm border border-gray-300 bg-white overflow-hidden"
-                                                            data-url="{{ $attachmentUrl }}"
-                                                            data-name="{{ $attachment->original_name }}"
-                                                            data-mime="{{ $attachment->mime_type }}">
-                                                            @if ($isImage)
-                                                                <img src="{{ $attachmentUrl }}" alt="{{ $attachment->original_name }}" class="h-full w-full object-cover">
-                                                            @else
-                                                                <span class="block text-[6px] leading-[10px] text-gray-500 text-center">PDF</span>
-                                                            @endif
-                                                        </button>
-                                                    @endforeach
-                                                </div>
-                                            </div>
-                                        @endif
-                                    </div>
-
-                                    <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-700">
-                                        <div>
-                                            <div class="text-xs text-gray-400">Estado</div>
-                                            <div data-status-ticket="{{ $ticket->id }}">{{ $statusLabel }}</div>
-                                        </div>
-                                        <div>
-                                            <div class="text-xs text-gray-400">Asignado</div>
-                                            <div data-assigned-ticket="{{ $ticket->id }}">{{ $assignedNames ?: '—' }}</div>
-                                        </div>
-                                        <div>
-                                            <div class="text-xs text-gray-400">Creado</div>
-                                            <div>{{ $ticket->created_at->format('d-m-Y H:i') }}</div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div x-show="tab === 'chat'" class="space-y-3">
-                                    <div class="flex items-center justify-between">
-                                        <div class="text-sm font-medium text-gray-700">Conversación</div>
-                                        <button type="button"
-                                            class="text-xs text-gray-500 hover:text-gray-700"
-                                            data-chat-refresh
-                                            data-chat-ticket="{{ $ticket->id }}">
-                                            Actualizar
-                                        </button>
-                                    </div>
-                                    <div
-                                        class="h-56 overflow-y-auto rounded-lg border border-gray-200 bg-white p-3 space-y-3 text-sm"
-                                        data-chat-container
-                                        data-chat-ticket="{{ $ticket->id }}"
-                                        data-chat-fetch-url="{{ route('tickets.messages.index', $ticket) }}">
-                                    </div>
-                                    <form
-                                        class="space-y-2"
-                                        data-chat-form
-                                        data-chat-ticket="{{ $ticket->id }}"
-                                        data-chat-send-url="{{ route('tickets.messages.store', $ticket) }}">
-                                        @csrf
-                                        <textarea name="message" rows="2" placeholder="Escribe un mensaje"
-                                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700"></textarea>
-                                        <div class="flex justify-end">
-                                            <button type="submit"
-                                                class="rounded-lg border border-[#6B8E23] px-3 py-2 text-xs text-[#6B8E23] hover:bg-[#F4F7EE]">
-                                                Enviar
-                                            </button>
-                                        </div>
-                                    </form>
-                                </div>
-
-                                <div x-show="tab === 'agenda'">
-                                    <div class="space-y-3">
-                                        @forelse($ticket->schedules as $schedule)
-                                            @php
-                                                $techName = $schedule->technician?->name ?? 'Sin técnico';
-                                                $start = $schedule->start_at?->format('d-m-Y H:i') ?? '';
-                                                $end = $schedule->end_at?->format('d-m-Y H:i') ?? '';
-                                                $modality = $schedule->modality === 'terreno' ? 'Visita en terreno' : ($schedule->modality === 'remota' ? 'Atención remota' : null);
-                                            @endphp
-                                            <div class="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-700">
-                                                <div class="flex items-center justify-between gap-3">
-                                                    <div class="font-medium">{{ $start }} @if($end) — {{ $end }} @endif</div>
-                                                    @if($modality)
-                                                        <div class="text-xs text-gray-500">{{ $modality }}</div>
-                                                    @endif
-                                                </div>
-                                                <div class="text-xs text-gray-500 mt-1">Técnico: {{ $techName }}</div>
-                                            </div>
-                                        @empty
-                                            <div class="rounded-lg border border-dashed border-gray-300 p-4 text-sm text-gray-500 bg-gray-50">
-                                                Aún no hay agendamientos registrados.
-                                            </div>
-                                        @endforelse
-                                    </div>
-                                </div>
-
-                                <div x-show="tab === 'acciones'">
-                                    <div x-show="!hasAssignment" class="admin-warning mb-4 rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3 text-xs text-yellow-800">
-                                        Asigna el ticket a un técnico para poder registrar acciones.
-                                    </div>
-                                    <div class="flex items-center justify-between mb-3">
-                                        <div class="text-sm font-medium text-gray-700">Acciones registradas</div>
-                                        <div x-show="!canManage" class="text-xs text-gray-400">Solo el técnico asignado puede editar.</div>
-                                    </div>
-                                    <div class="mb-3 text-xs text-gray-500">
-                                        Registra lo que necesitas hacer: repuestos, instalaciones, compras u otras tareas.
-                                    </div>
-
-                                    <div class="space-y-3">
-                                        @forelse($ticket->actions as $action)
-                                            <div class="rounded-lg border border-gray-200 bg-white p-3 text-sm text-gray-700">
-                                                <div class="flex items-center justify-between">
-                                                    <div class="font-medium capitalize">
-                                                        {{ str_replace('_', ' ', $action->action_type) }}
-                                                    </div>
-                                                    <div class="text-xs text-gray-400">
-                                                        {{ $action->created_at->format('d-m-Y H:i') }}
-                                                    </div>
-                                                </div>
-                                                <div class="mt-1 text-sm text-gray-600">{{ $action->description }}</div>
-                                                <div class="mt-2 text-xs text-gray-500">
-                                                    Estado: <span class="font-medium text-gray-700">{{ str_replace('_', ' ', $action->status) }}</span>
-                                                    @if($action->creator)
-                                                        · {{ $action->creator->name }}
-                                                    @endif
-                                                </div>
-                                            </div>
-                                        @empty
-                                            <div class="rounded-lg border border-dashed border-gray-300 p-4 text-sm text-gray-500 bg-gray-50">
-                                                Aún no hay acciones registradas.
-                                            </div>
-                                        @endforelse
-                                    </div>
-
-                                    <div class="mt-4 rounded-lg border border-gray-200 bg-gray-50 p-4">
-                                        <div class="text-xs uppercase tracking-wide text-gray-400">Agregar acción</div>
-                                                    <form method="POST" action="{{ route('admin.tickets.actions', $ticket) }}" class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3" data-ajax="true" data-ajax-type="action" data-ticket-id="{{ $ticket->id }}">
-                                                        @csrf
-                                                        <select name="action_type" required class="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700" :disabled="!canManage">
-                                                            <option value="repuesto">Repuesto</option>
-                                                            <option value="instalacion">Instalación</option>
-                                                            <option value="compra">Compra</option>
-                                                            <option value="otro">Otro</option>
-                                                        </select>
-                                                        <select name="status" required class="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700" :disabled="!canManage">
-                                                            <option value="pendiente">Pendiente</option>
-                                                            <option value="en_progreso">En progreso</option>
-                                                            <option value="completado">Completado</option>
-                                                        </select>
-                                                        <textarea name="description" rows="2" placeholder="Describe la acción o tarea" required
-                                                            class="md:col-span-2 rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700" :disabled="!canManage"></textarea>
-                                                        <div class="md:col-span-2 flex justify-end">
-                                                            <button type="submit"
-                                                                class="rounded-lg border border-[#6B8E23] px-3 py-2 text-xs text-[#6B8E23] hover:bg-[#F4F7EE] disabled:opacity-50"
-                                                                :disabled="!canManage">
-                                                                Guardar acción
-                                                            </button>
-                                                        </div>
-                                                    </form>
-                                    </div>
-                                </div>
-
-                                <div x-show="tab === 'clasificacion'">
-                                    <div x-show="!hasAssignment" class="admin-warning mb-4 rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3 text-xs text-yellow-800">
-                                        Asigna el ticket a un técnico para poder clasificar.
-                                    </div>
-                                    <div class="flex items-center justify-between mb-3">
-                                        <div class="text-sm font-medium text-gray-700">Clasificación técnica</div>
-                                        <div x-show="!canManage" class="text-xs text-gray-400">Solo el técnico asignado puede editar.</div>
-                                    </div>
-
-                                                <form method="POST" action="{{ route('admin.tickets.classification', $ticket) }}" class="space-y-3" data-ajax="true" data-ajax-type="classification" data-ticket-id="{{ $ticket->id }}">
-                                                    @csrf
-                                                    <input type="text" name="categoria_interna" placeholder="Categoría interna" required
-                                                        value="{{ old('categoria_interna', $ticket->categoria_interna) }}"
-                                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700" :disabled="!canManage">
-                                        <input type="text" name="problem_type" placeholder="Tipo de problema" required
-                                            value="{{ old('problem_type', $ticket->problem_type) }}"
-                                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700" :disabled="!canManage">
-                                        <input type="text" name="root_cause" placeholder="Causa raíz" required
-                                            value="{{ old('root_cause', $ticket->root_cause) }}"
-                                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700" :disabled="!canManage">
-                                        <div class="flex justify-end">
-                                            <button type="submit"
-                                                class="rounded-lg border border-gray-300 px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-                                                :disabled="!canManage">
-                                                Guardar clasificación
-                                            </button>
-                                        </div>
-                                    </form>
-                                </div>
-
-                                <div x-show="tab === 'resolucion'">
-                                    <div class="text-sm font-medium text-gray-700 mb-3">Resolución</div>
-                                    <div x-show="!hasAssignment" class="admin-warning mb-4 rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3 text-xs text-yellow-800">
-                                        Asigna el ticket a un técnico para completar la resolución.
-                                    </div>
-                                    <div x-show="actionsCount === 0" class="mb-4 rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3 text-xs text-yellow-800">
-                                        Registra al menos una acción antes de completar la resolución.
-                                    </div>
-                                    <div x-show="!classificationComplete" class="mb-4 rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3 text-xs text-yellow-800">
-                                        Completa la clasificación técnica antes de cerrar el ticket.
-                                    </div>
-                                    <form method="POST" action="{{ route('admin.tickets.resolve', $ticket) }}" class="space-y-3" data-ajax="true" data-ajax-type="resolution" data-ticket-id="{{ $ticket->id }}">
-                                        @csrf
-                                        <textarea name="resolution_text" rows="4" placeholder="Resumen de resolución" required
-                                                        class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700" :disabled="!canManage">{{ $ticket->resolution?->resolution_text }}</textarea>
-                                        <div class="flex justify-end">
-                                            <button type="submit"
-                                                class="rounded-lg border border-[#6B8E23] px-3 py-2 text-xs text-[#6B8E23] hover:bg-[#F4F7EE] disabled:opacity-50"
-                                                :disabled="!canManage">
-                                                Completar ticket
-                                            </button>
-                                        </div>
-                                    </form>
-
-                                </div>
-
-                                <div x-show="tab === 'cierre_rapido'">
-                                    <div class="text-sm font-medium text-gray-700 mb-3">Cierre rápido</div>
-                                    <div class="text-xs text-gray-500 mb-3">
-                                        Registra una acción, clasificación y resolución en un solo paso.
-                                    </div>
-                                    <form method="POST" action="{{ route('admin.tickets.quick-close', $ticket) }}" class="space-y-3">
-                                        @csrf
-                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                            <select name="action_type" required class="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700" :disabled="!canManage">
-                                                <option value="">Tipo de acción</option>
-                                                <option value="repuesto">Repuesto</option>
-                                                <option value="instalacion">Instalación</option>
-                                                <option value="compra">Compra</option>
-                                                <option value="otro">Otro</option>
-                                            </select>
-                                            <select name="action_status" required class="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700" :disabled="!canManage">
-                                                <option value="">Estado de acción</option>
-                                                <option value="pendiente">Pendiente</option>
-                                                <option value="en_progreso">En progreso</option>
-                                                <option value="completado">Completado</option>
-                                            </select>
-                                            <textarea name="action_description" rows="2" placeholder="Descripción de la acción" required
-                                                class="md:col-span-2 rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700" :disabled="!canManage"></textarea>
-                                        </div>
-                                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                                            <input type="text" name="categoria_interna" placeholder="Categoría interna" required
-                                                class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700" :disabled="!canManage">
-                                            <input type="text" name="problem_type" placeholder="Tipo de problema" required
-                                                class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700" :disabled="!canManage">
-                                            <input type="text" name="root_cause" placeholder="Causa raíz" required
-                                                class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700" :disabled="!canManage">
-                                        </div>
-                                        <textarea name="resolution_text" rows="3" placeholder="Resolución final" required
-                                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700" :disabled="!canManage"></textarea>
-                                        <div class="flex justify-end">
-                                            <button type="submit"
-                                                class="inline-flex items-center gap-1.5 px-3 py-2 rounded-full border border-[#6B8E23] text-sm font-medium text-[#6B8E23] bg-[#F4F7EE] hover:bg-[#E9F0DF] transition disabled:opacity-50"
-                                                :disabled="!canManage">
-                                                Cerrar Ticket
-                                            </button>
-                                        </div>
-                                    </form>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
             </div>
             @empty
             <div class="text-center text-gray-500 py-6">No hay tickets registrados</div>
             @endforelse
+        </div>
+    </div>
+</div>
+
+<div id="admin-ticket-modal-root" class="fixed inset-0 z-50 hidden" aria-hidden="true">
+    <div class="absolute inset-0 bg-black/30 backdrop-blur-sm" data-modal-backdrop></div>
+    <div class="relative z-10 flex h-full w-full items-center justify-center p-4">
+        <div id="admin-ticket-modal-body" class="w-full max-w-5xl"></div>
+        <div id="admin-ticket-modal-loading" class="absolute flex items-center gap-2 rounded-full bg-white/90 px-4 py-2 text-xs text-gray-600 shadow-sm">
+            <span class="inline-block h-3 w-3 animate-spin rounded-full border-2 border-gray-300 border-t-gray-500"></span>
+            Cargando ticket...
         </div>
     </div>
 </div>
@@ -568,10 +136,93 @@
 @push('scripts')
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            const manager = document.getElementById('admin-ticket-manager');
+            const modalRoot = document.getElementById('admin-ticket-modal-root');
+            const modalBody = document.getElementById('admin-ticket-modal-body');
+            const modalLoading = document.getElementById('admin-ticket-modal-loading');
+            const modalBackdrop = modalRoot?.querySelector('[data-modal-backdrop]');
+            const modalUrlTemplate = manager?.dataset.modalUrl;
+            const modalCache = new Map();
+            let activeTicketId = null;
+
             const viewer = document.getElementById('admin-attachment-viewer');
             const stage = document.getElementById('admin-attachment-stage');
             const caption = document.getElementById('admin-attachment-caption');
             const closeBtn = document.getElementById('admin-attachment-close');
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
+            const setModalLoading = (isLoading) => {
+                if (!modalLoading) return;
+                modalLoading.classList.toggle('hidden', !isLoading);
+            };
+
+            const openModalRoot = () => {
+                if (!modalRoot) return;
+                modalRoot.classList.remove('hidden');
+                modalRoot.setAttribute('aria-hidden', 'false');
+            };
+
+            const closeModal = () => {
+                if (!modalRoot || !modalBody) return;
+                modalRoot.classList.add('hidden');
+                modalRoot.setAttribute('aria-hidden', 'true');
+                modalBody.innerHTML = '';
+                activeTicketId = null;
+            };
+
+            const buildModalUrl = (ticketId) => {
+                if (!modalUrlTemplate) return null;
+                return modalUrlTemplate.replace('TICKET_ID', ticketId);
+            };
+
+            async function fetchModal(ticketId) {
+                if (modalCache.has(ticketId)) {
+                    return modalCache.get(ticketId);
+                }
+                const url = buildModalUrl(ticketId);
+                if (!url) return null;
+                const response = await fetch(url, { headers: { 'Accept': 'text/html' } });
+                if (!response.ok) return null;
+                const html = await response.text();
+                modalCache.set(ticketId, html);
+                return html;
+            }
+
+            async function openModal(ticketId, options = {}) {
+                if (!modalRoot || !modalBody) return;
+                activeTicketId = ticketId;
+                openModalRoot();
+                modalBody.innerHTML = '';
+                setModalLoading(true);
+                try {
+                    const html = await fetchModal(ticketId);
+                    if (!html) {
+                        setModalLoading(false);
+                        return;
+                    }
+                    modalBody.innerHTML = html;
+                    if (window.Alpine && typeof window.Alpine.initTree === 'function') {
+                        window.Alpine.initTree(modalBody);
+                    }
+                    if (options.tab) {
+                        const alpineRoot = modalBody.querySelector('[x-data]');
+                        if (alpineRoot?.__x?.$data) {
+                            alpineRoot.__x.$data.tab = options.tab;
+                        }
+                        if (options.tab === 'chat') {
+                            const container = modalBody.querySelector(`[data-chat-container][data-chat-ticket="${ticketId}"]`);
+                            if (container) {
+                                loadChat(container);
+                            }
+                        }
+                    }
+                } catch (_) {
+                } finally {
+                    setModalLoading(false);
+                }
+            }
+
+            window.openAdminTicketModal = openModal;
 
             function openViewer({ url, name, mime }) {
                 if (!viewer || !stage) return;
@@ -606,16 +257,6 @@
                 }
             }
 
-            document.querySelectorAll('.admin-attachment-thumb').forEach((thumb) => {
-                thumb.addEventListener('click', () => {
-                    openViewer({
-                        url: thumb.dataset.url,
-                        name: thumb.dataset.name,
-                        mime: thumb.dataset.mime,
-                    });
-                });
-            });
-
             if (closeBtn) {
                 closeBtn.addEventListener('click', closeViewer);
             }
@@ -629,14 +270,9 @@
             window.addEventListener('keydown', (event) => {
                 if (event.key === 'Escape') {
                     closeViewer();
+                    closeModal();
                 }
             });
-        });
-    </script>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
 
             async function loadChat(container) {
                 const url = container.dataset.chatFetchUrl;
@@ -685,54 +321,87 @@
                 container.scrollTop = container.scrollHeight;
             }
 
-            document.querySelectorAll('[data-chat-refresh]').forEach((button) => {
-                button.addEventListener('click', () => {
-                    const ticketId = button.dataset.chatTicket;
-                    const container = document.querySelector(`[data-chat-container][data-chat-ticket=\"${ticketId}\"]`);
+            document.addEventListener('click', (event) => {
+                const card = event.target.closest('[data-ticket-card]');
+                if (card) {
+                    const ticketId = card.dataset.ticketId;
+                    if (ticketId) {
+                        openModal(ticketId);
+                    }
+                    return;
+                }
+                const closeTrigger = event.target.closest('[data-modal-close]');
+                if (closeTrigger) {
+                    closeModal();
+                    return;
+                }
+                const thumb = event.target.closest('.admin-attachment-thumb');
+                if (thumb) {
+                    openViewer({
+                        url: thumb.dataset.url,
+                        name: thumb.dataset.name,
+                        mime: thumb.dataset.mime,
+                    });
+                    return;
+                }
+                const refreshBtn = event.target.closest('[data-chat-refresh]');
+                if (refreshBtn) {
+                    const ticketId = refreshBtn.dataset.chatTicket;
+                    const container = document.querySelector(`[data-chat-container][data-chat-ticket="${ticketId}"]`);
                     if (container) {
                         loadChat(container);
                     }
-                });
-            });
-
-            document.querySelectorAll('[data-chat-form]').forEach((form) => {
-                form.addEventListener('submit', async (event) => {
-                    event.preventDefault();
-                    const textarea = form.querySelector('textarea[name=\"message\"]');
-                    const message = textarea?.value?.trim();
-                    if (!message) return;
-                    const url = form.dataset.chatSendUrl;
-                    if (!url) return;
-
-                    try {
-                        const response = await fetch(url, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Accept': 'application/json',
-                                ...(csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {}),
-                            },
-                            body: JSON.stringify({ message }),
-                        });
-                        if (!response.ok) return;
-                        textarea.value = '';
-                        const ticketId = form.dataset.chatTicket;
-                        const container = document.querySelector(`[data-chat-container][data-chat-ticket=\"${ticketId}\"]`);
-                        if (container) {
-                            loadChat(container);
-                        }
-                    } catch (_) {}
-                });
-            });
-
-            document.querySelectorAll('[data-chat-tab]').forEach((button) => {
-                button.addEventListener('click', () => {
-                    const ticketId = button.dataset.chatTicket;
-                    const container = document.querySelector(`[data-chat-container][data-chat-ticket=\"${ticketId}\"]`);
+                    return;
+                }
+                const tabBtn = event.target.closest('[data-chat-tab]');
+                if (tabBtn) {
+                    const ticketId = tabBtn.dataset.chatTicket;
+                    const container = document.querySelector(`[data-chat-container][data-chat-ticket="${ticketId}"]`);
                     if (container) {
                         loadChat(container);
                     }
-                });
+                }
+            });
+
+            document.addEventListener('submit', async (event) => {
+                const form = event.target.closest('[data-chat-form]');
+                if (!form) return;
+                event.preventDefault();
+                const textarea = form.querySelector('textarea[name="message"]');
+                const message = textarea?.value?.trim();
+                if (!message) return;
+                const url = form.dataset.chatSendUrl;
+                if (!url) return;
+
+                try {
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            ...(csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {}),
+                        },
+                        body: JSON.stringify({ message }),
+                    });
+                    if (!response.ok) return;
+                    textarea.value = '';
+                    const ticketId = form.dataset.chatTicket;
+                    const container = document.querySelector(`[data-chat-container][data-chat-ticket="${ticketId}"]`);
+                    if (container) {
+                        loadChat(container);
+                    }
+                } catch (_) {}
+            });
+
+            document.addEventListener('keydown', (event) => {
+                if (event.key !== 'Enter' && event.key !== ' ') return;
+                const card = event.target.closest('[data-ticket-card]');
+                if (!card) return;
+                event.preventDefault();
+                const ticketId = card.dataset.ticketId;
+                if (ticketId) {
+                    openModal(ticketId);
+                }
             });
 
             function openChatFromUrl() {
@@ -741,33 +410,23 @@
                 const tab = params.get('tab');
                 if (!ticketId || tab !== 'chat') return;
 
-                const card = document.querySelector(`[data-ticket-id=\"${ticketId}\"]`);
+                const card = document.querySelector(`[data-ticket-id="${ticketId}"]`);
                 if (!card) return;
-
-                const openAndFocusChat = () => {
-                    const chatTab = document.querySelector(`[data-chat-tab][data-chat-ticket=\"${ticketId}\"]`);
-                    if (chatTab) {
-                        chatTab.click();
-                    }
-                    const container = document.querySelector(`[data-chat-container][data-chat-ticket=\"${ticketId}\"]`);
-                    if (container) {
-                        loadChat(container);
-                    }
-                };
-
-                if (card.__x && card.__x.$data) {
-                    card.__x.$data.open = true;
-                } else {
-                    card.click();
-                }
-
-                setTimeout(openAndFocusChat, 150);
+                openModal(ticketId, { tab: 'chat' });
             }
 
             document.addEventListener('alpine:initialized', () => {
                 setTimeout(openChatFromUrl, 50);
             });
             setTimeout(openChatFromUrl, 300);
+
+            if (modalRoot) {
+                modalRoot.addEventListener('click', (event) => {
+                    if (event.target === modalRoot || event.target === modalBackdrop) {
+                        closeModal();
+                    }
+                });
+            }
         });
     </script>
 @endpush

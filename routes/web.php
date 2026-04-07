@@ -121,6 +121,8 @@ Route::middleware(['auth', 'active.user', 'force.password', 'admin'])
     ->group(function () {
         Route::get('/', [AdminTicketController::class, 'index'])
             ->name('admin.tickets.index');
+        Route::get('/{ticket}/modal', [AdminTicketController::class, 'modal'])
+            ->name('admin.tickets.modal');
         Route::get('/asistido', [AssistedTicketController::class, 'create'])
             ->name('admin.tickets.assisted.create');
         Route::get('/asistido/users', [AssistedTicketController::class, 'users'])
