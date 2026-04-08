@@ -158,8 +158,8 @@
     <div class="admin-page w-full h-screen flex flex-col items-center px-4 bg-[#FAFAF7] overflow-hidden">
         <div class="w-full max-w-7xl py-8 flex flex-col" style="height: calc(100vh - 2rem);">
             <div class="mb-3 text-center">
-                <img src="{{ asset('images/logo.png') }}" alt="Logo Tickets TI" class="theme-logo-light admin-logo mx-auto h-8" style="width: 130px; height: auto;">
-                <img src="{{ asset('images/logo-white.png') }}" alt="Logo Tickets TI" class="theme-logo-dark admin-logo mx-auto h-8" style="width: 130px; height: auto;">
+                <img src="{{ asset('images/logo.png') }}" alt="Logo Tickets TI" class="theme-logo-light admin-logo mx-auto h-8 sitin-logo-egg cursor-pointer" style="width: 130px; height: auto;">
+                <img src="{{ asset('images/logo-white.png') }}" alt="Logo Tickets TI" class="theme-logo-dark admin-logo mx-auto h-8 sitin-logo-egg cursor-pointer" style="width: 130px; height: auto;">
             </div>
 
             <div class="mb-4 flex items-center justify-between gap-3">
@@ -400,6 +400,23 @@
         </div>
     </div>
 
+    <div id="sitin-snake-modal" class="fixed inset-0 z-[60] hidden" aria-hidden="true">
+        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
+        <div class="relative z-10 flex h-full w-full items-center justify-center p-4">
+            <div class="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-5 shadow-xl">
+                <div class="flex items-center justify-between">
+                    <div class="text-sm font-semibold text-gray-800">SITIN Snake</div>
+                    <button type="button" id="sitin-snake-close" class="text-gray-500 hover:text-gray-700">✕</button>
+                </div>
+                <div class="mt-4 flex items-center justify-center">
+                    <canvas id="sitin-snake-canvas" width="320" height="320" class="rounded-xl border border-gray-200 bg-gray-50"></canvas>
+                </div>
+                <div class="mt-3 text-center text-xs text-gray-500">Usa las flechas del teclado para jugar</div>
+                <div class="mt-2 text-center text-xs text-gray-400">desarrollado por Vicente Flores</div>
+            </div>
+        </div>
+    </div>
+
     </div>
     @push('scripts')
         <script>
@@ -540,6 +557,122 @@
                 }, 6000);
 
                 hideLoader();
+            });
+        </script>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                const modal = document.getElementById('sitin-snake-modal');
+                const closeBtn = document.getElementById('sitin-snake-close');
+                const canvas = document.getElementById('sitin-snake-canvas');
+                const triggers = document.querySelectorAll('.sitin-logo-egg');
+                if (!modal || !canvas || !triggers.length) return;
+
+                const ctx = canvas.getContext('2d');
+                const gridSize = 16;
+                const cell = canvas.width / gridSize;
+                let snake = [{ x: 8, y: 8 }];
+                let dir = { x: 1, y: 0 };
+                let food = { x: 12, y: 8 };
+                let loop = null;
+                let pendingDir = null;
+
+                const resetGame = () => {
+                    snake = [{ x: 8, y: 8 }];
+                    dir = { x: 1, y: 0 };
+                    pendingDir = null;
+                    spawnFood();
+                };
+
+                const spawnFood = () => {
+                    let x, y;
+                    do {
+                        x = Math.floor(Math.random() * gridSize);
+                        y = Math.floor(Math.random() * gridSize);
+                    } while (snake.some((part) => part.x === x && part.y === y));
+                    food = { x, y };
+                };
+
+                const draw = () => {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    snake.forEach((part, index) => {
+                        ctx.fillStyle = index === 0 ? '#6B8E23' : '#94a3b8';
+                        ctx.fillRect(part.x * cell, part.y * cell, cell - 1, cell - 1);
+                    });
+                    ctx.fillStyle = '#f97316';
+                    ctx.fillRect(food.x * cell, food.y * cell, cell - 1, cell - 1);
+                };
+
+                const step = () => {
+                    if (pendingDir) {
+                        dir = pendingDir;
+                        pendingDir = null;
+                    }
+                    const head = { x: snake[0].x + dir.x, y: snake[0].y + dir.y };
+                    if (head.x < 0 || head.y < 0 || head.x >= gridSize || head.y >= gridSize) {
+                        resetGame();
+                        return;
+                    }
+                    if (snake.some((part) => part.x === head.x && part.y === head.y)) {
+                        resetGame();
+                        return;
+                    }
+                    snake.unshift(head);
+                    if (head.x === food.x && head.y === food.y) {
+                        spawnFood();
+                    } else {
+                        snake.pop();
+                    }
+                    draw();
+                };
+
+                const startGame = () => {
+                    resetGame();
+                    draw();
+                    loop = setInterval(step, 120);
+                };
+
+                const stopGame = () => {
+                    if (loop) {
+                        clearInterval(loop);
+                        loop = null;
+                    }
+                };
+
+                const openModal = () => {
+                    modal.classList.remove('hidden');
+                    modal.setAttribute('aria-hidden', 'false');
+                    startGame();
+                };
+
+                const closeModal = () => {
+                    modal.classList.add('hidden');
+                    modal.setAttribute('aria-hidden', 'true');
+                    stopGame();
+                };
+
+                triggers.forEach((trigger) => {
+                    trigger.addEventListener('click', openModal);
+                });
+
+                if (closeBtn) {
+                    closeBtn.addEventListener('click', closeModal);
+                }
+
+                modal.addEventListener('click', (event) => {
+                    if (event.target === modal || event.target === modal.firstElementChild) {
+                        closeModal();
+                    }
+                });
+
+                window.addEventListener('keydown', (event) => {
+                    if (modal.classList.contains('hidden')) return;
+                    const key = event.key;
+                    if (key === 'ArrowUp' && dir.y !== 1) pendingDir = { x: 0, y: -1 };
+                    if (key === 'ArrowDown' && dir.y !== -1) pendingDir = { x: 0, y: 1 };
+                    if (key === 'ArrowLeft' && dir.x !== 1) pendingDir = { x: -1, y: 0 };
+                    if (key === 'ArrowRight' && dir.x !== -1) pendingDir = { x: 1, y: 0 };
+                });
             });
         </script>
     @endpush
