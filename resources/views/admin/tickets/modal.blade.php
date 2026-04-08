@@ -1,9 +1,5 @@
 @php
-    $status = $ticket->latestStatusEvent?->to_status ?? 'nuevo';
-    $locacionPadre = $ticket->locacion?->nombre ?? 'Sin ubicación';
-    $locacionLabel = $ticket->locacion_hija_texto
-        ? $locacionPadre . ' - ' . $ticket->locacion_hija_texto
-        : $locacionPadre;
+    $locacionLabel = \App\Support\TicketView::locationLabel($ticket);
     $assignedTechs = $ticket->currentAssignments ?? collect();
     $assignedIds = $assignedTechs->pluck('technician_id')->all();
     $assignedNames = $assignedTechs->pluck('technician.name')->filter()->join(', ');
@@ -11,9 +7,9 @@
     $canManage = $assignedTechs->contains('technician_id', auth()->id());
     $classificationComplete = ($ticket->categoria_interna && $ticket->problem_type && $ticket->root_cause);
     $actionsCount = $ticket->actions->count();
-    $isResolved = in_array($status, ['resuelto', 'cerrado'], true);
-    $isStandby = in_array($status, ['standby', 'en_espera'], true);
-    $statusLabel = $status === 'standby' ? 'en espera' : $status;
+    $statusMeta = \App\Support\TicketView::statusMeta($ticket);
+    $isResolved = $statusMeta['is_resolved'];
+    $isStandby = $statusMeta['is_standby'];
     $requesterName = $ticket->usuario ?: ($ticket->requester?->name ?? 'Sin nombre');
 @endphp
 
@@ -40,7 +36,7 @@
                 <div class="admin-tech-pill rounded-full bg-gray-100 px-3 py-1 text-xs text-gray-700">
                     Técnicos: <span class="font-medium" data-assigned-ticket="{{ $ticket->id }}">{{ $assignedNames ?: '—' }}</span>
                 </div>
-                <div x-data="{ openAssign: false }" class="relative">
+                <div x-data="{ openAssign: false }" @close-assign-dropdown.window="openAssign = false" class="relative" data-assign-dropdown>
                     <button type="button"
                         @click.stop="openAssign = !openAssign"
                         class="admin-edit-tech text-xs text-gray-500 hover:text-gray-700 underline">
@@ -65,7 +61,7 @@
                                 @endforeach
                             </div>
                             <div class="flex justify-end">
-                                <button type="submit"
+                                <button type="submit" data-assign-submit
                                     class="rounded-lg border border-[#6B8E23] px-3 py-2 text-xs text-[#6B8E23] hover:bg-[#F4F7EE]">
                                     Guardar
                                 </button>
@@ -120,33 +116,44 @@
                     class="w-full text-left rounded-lg border px-3 py-2 transition disabled:opacity-40 disabled:cursor-not-allowed">
                     Resolución
                 </button>
-                <button type="button"
-                    :disabled="!canManage"
-                    @click="canManage ? (tab = 'cierre_rapido') : null"
-                    :class="tab === 'cierre_rapido' ? 'ring-2 ring-[#6B8E23]/20' : ''"
-                    class="admin-cta w-full inline-flex items-center justify-center gap-1 rounded-full border border-[#6B8E23] px-2.5 py-1.5 text-xs font-medium text-[#6B8E23] bg-[#F4F7EE] hover:bg-[#E9F0DF] transition disabled:opacity-50 disabled:cursor-not-allowed">
-                    Cierre Rapido
-                </button>
-                <form method="POST" action="{{ route('admin.tickets.status', $ticket) }}" class="w-full" @click.stop>
-                    @csrf
-                    <input type="hidden" name="to_status" :value="isStandby ? 'standby' : (hasAssignment ? 'asignado' : 'nuevo')">
-                    <input type="hidden" name="reason" :value="isStandby ? 'Ticket en espera' : ''">
-                    <label
-                        class="w-full inline-flex items-center justify-between gap-2 rounded-full border border-orange-400 px-2.5 py-1.5 text-xs font-medium text-orange-700 bg-orange-50 hover:bg-orange-100 transition"
-                        :class="(!canManage || isResolved) ? 'opacity-50 cursor-not-allowed' : ''">
-                        <span>Ticket en Espera</span>
-                        <span class="relative inline-flex h-4 w-8 items-center rounded-full bg-orange-200 transition">
-                            <span
-                                class="inline-block h-3 w-3 transform rounded-full bg-white shadow transition"
-                                :class="isStandby ? 'translate-x-4' : 'translate-x-1'"></span>
-                        </span>
-                        <input type="checkbox"
-                            class="sr-only"
-                            x-model="isStandby"
-                            @change="$nextTick(() => $el.form.submit())"
-                            :disabled="!canManage || isResolved">
-                    </label>
-                </form>
+                @if (!$isResolved)
+                    <button type="button"
+                        :disabled="!canManage"
+                        @click="canManage ? (tab = 'cierre_rapido') : null"
+                        :class="tab === 'cierre_rapido' ? 'ring-2 ring-[#6B8E23]/20' : ''"
+                        class="admin-cta w-full inline-flex items-center justify-center gap-1 rounded-full border border-[#6B8E23] px-2.5 py-1.5 text-xs font-medium text-[#6B8E23] bg-[#F4F7EE] hover:bg-[#E9F0DF] transition disabled:opacity-50 disabled:cursor-not-allowed">
+                        Cierre Rapido
+                    </button>
+                    <form method="POST" action="{{ route('admin.tickets.status', $ticket) }}" class="w-full" @click.stop>
+                        @csrf
+                        <input type="hidden" name="to_status" :value="isStandby ? 'standby' : (hasAssignment ? 'asignado' : 'nuevo')">
+                        <input type="hidden" name="reason" :value="isStandby ? 'Ticket en espera' : ''">
+                        <label
+                            class="w-full inline-flex items-center justify-between gap-2 rounded-full border border-orange-400 px-2.5 py-1.5 text-xs font-medium text-orange-700 bg-orange-50 hover:bg-orange-100 transition"
+                            :class="(!canManage || isResolved) ? 'opacity-50 cursor-not-allowed' : ''">
+                            <span>Ticket en Espera</span>
+                            <span class="relative inline-flex h-4 w-8 items-center rounded-full bg-orange-200 transition">
+                                <span
+                                    class="inline-block h-3 w-3 transform rounded-full bg-white shadow transition"
+                                    :class="isStandby ? 'translate-x-4' : 'translate-x-1'"></span>
+                            </span>
+                            <input type="checkbox"
+                                class="sr-only"
+                                x-model="isStandby"
+                                @change="$nextTick(() => $el.form.submit())"
+                                :disabled="!canManage || isResolved">
+                        </label>
+                    </form>
+                @else
+                    <form method="POST" action="{{ route('admin.tickets.reopen', $ticket) }}" class="w-full" data-ajax="true" data-ajax-type="reopen" data-ticket-id="{{ $ticket->id }}">
+                        @csrf
+                        <button type="submit"
+                            :disabled="!canManage"
+                            class="w-full inline-flex items-center justify-center gap-1 rounded-full border border-[#6B8E23] px-2.5 py-1.5 text-xs font-medium text-[#6B8E23] bg-[#F4F7EE] hover:bg-[#E9F0DF] transition disabled:opacity-50 disabled:cursor-not-allowed">
+                            Reabrir ticket
+                        </button>
+                    </form>
+                @endif
                 <div x-show="!canResolve()" class="text-[11px] text-gray-400">
                     Completa acciones y clasificación para habilitar resolución.
                 </div>
@@ -215,7 +222,7 @@
                 <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-700">
                     <div>
                         <div class="text-xs text-gray-400">Estado</div>
-                        <div data-status-ticket="{{ $ticket->id }}">{{ $statusLabel }}</div>
+            <div data-status-ticket="{{ $ticket->id }}">{{ $statusMeta['label'] }}</div>
                     </div>
                     <div>
                         <div class="text-xs text-gray-400">Asignado</div>
@@ -325,32 +332,34 @@
                     @endforelse
                 </div>
 
-                <div class="mt-4 rounded-lg border border-gray-200 bg-gray-50 p-4">
-                    <div class="text-xs uppercase tracking-wide text-gray-400">Agregar acción</div>
-                    <form method="POST" action="{{ route('admin.tickets.actions', $ticket) }}" class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3" data-ajax="true" data-ajax-type="action" data-ticket-id="{{ $ticket->id }}">
-                        @csrf
-                        <select name="action_type" required class="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700" :disabled="!canManage">
-                            <option value="repuesto">Repuesto</option>
-                            <option value="instalacion">Instalación</option>
-                            <option value="compra">Compra</option>
-                            <option value="otro">Otro</option>
-                        </select>
-                        <select name="status" required class="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700" :disabled="!canManage">
-                            <option value="pendiente">Pendiente</option>
-                            <option value="en_progreso">En progreso</option>
-                            <option value="completado">Completado</option>
-                        </select>
-                        <textarea name="description" rows="2" placeholder="Describe la acción o tarea" required
-                            class="md:col-span-2 rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700" :disabled="!canManage"></textarea>
-                        <div class="md:col-span-2 flex justify-end">
-                            <button type="submit"
-                                class="rounded-lg border border-[#6B8E23] px-3 py-2 text-xs text-[#6B8E23] hover:bg-[#F4F7EE] disabled:opacity-50"
-                                :disabled="!canManage">
-                                Guardar acción
-                            </button>
-                        </div>
-                    </form>
-                </div>
+                @if (!$isResolved)
+                    <div class="mt-4 rounded-lg border border-gray-200 bg-gray-50 p-4">
+                        <div class="text-xs uppercase tracking-wide text-gray-400">Agregar acción</div>
+                        <form method="POST" action="{{ route('admin.tickets.actions', $ticket) }}" class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3" data-ajax="true" data-ajax-type="action" data-ticket-id="{{ $ticket->id }}">
+                            @csrf
+                            <select name="action_type" required class="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700" :disabled="!canManage">
+                                <option value="repuesto">Repuesto</option>
+                                <option value="instalacion">Instalación</option>
+                                <option value="compra">Compra</option>
+                                <option value="otro">Otro</option>
+                            </select>
+                            <select name="status" required class="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700" :disabled="!canManage">
+                                <option value="pendiente">Pendiente</option>
+                                <option value="en_progreso">En progreso</option>
+                                <option value="completado">Completado</option>
+                            </select>
+                            <textarea name="description" rows="2" placeholder="Describe la acción o tarea" required
+                                class="md:col-span-2 rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700" :disabled="!canManage"></textarea>
+                            <div class="md:col-span-2 flex justify-end">
+                                <button type="submit"
+                                    class="rounded-lg border border-[#6B8E23] px-3 py-2 text-xs text-[#6B8E23] hover:bg-[#F4F7EE] disabled:opacity-50"
+                                    :disabled="!canManage">
+                                    Guardar acción
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                @endif
             </div>
 
             <div x-show="tab === 'clasificacion'">
@@ -362,52 +371,77 @@
                     <div x-show="!canManage" class="text-xs text-gray-400">Solo el técnico asignado puede editar.</div>
                 </div>
 
-                <form method="POST" action="{{ route('admin.tickets.classification', $ticket) }}" class="space-y-3" data-ajax="true" data-ajax-type="classification" data-ticket-id="{{ $ticket->id }}">
-                    @csrf
-                    <input type="text" name="categoria_interna" placeholder="Categoría interna" required
-                        value="{{ old('categoria_interna', $ticket->categoria_interna) }}"
-                        class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700" :disabled="!canManage">
-                    <input type="text" name="problem_type" placeholder="Tipo de problema" required
-                        value="{{ old('problem_type', $ticket->problem_type) }}"
-                        class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700" :disabled="!canManage">
-                    <input type="text" name="root_cause" placeholder="Causa raíz" required
-                        value="{{ old('root_cause', $ticket->root_cause) }}"
-                        class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700" :disabled="!canManage">
-                    <div class="flex justify-end">
-                        <button type="submit"
-                            class="rounded-lg border border-gray-300 px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-                            :disabled="!canManage">
-                            Guardar clasificación
-                        </button>
+                @if ($isResolved)
+                    <div class="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-700 space-y-3">
+                        <div>
+                            <div class="text-xs text-gray-400">Categoría interna</div>
+                            <div>{{ $ticket->categoria_interna ?: '—' }}</div>
+                        </div>
+                        <div>
+                            <div class="text-xs text-gray-400">Tipo de problema</div>
+                            <div>{{ $ticket->problem_type ?: '—' }}</div>
+                        </div>
+                        <div>
+                            <div class="text-xs text-gray-400">Causa raíz</div>
+                            <div>{{ $ticket->root_cause ?: '—' }}</div>
+                        </div>
                     </div>
-                </form>
+                @else
+                    <form method="POST" action="{{ route('admin.tickets.classification', $ticket) }}" class="space-y-3" data-ajax="true" data-ajax-type="classification" data-ticket-id="{{ $ticket->id }}">
+                        @csrf
+                        <input type="text" name="categoria_interna" placeholder="Categoría interna" required
+                            value="{{ old('categoria_interna', $ticket->categoria_interna) }}"
+                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700" :disabled="!canManage">
+                        <input type="text" name="problem_type" placeholder="Tipo de problema" required
+                            value="{{ old('problem_type', $ticket->problem_type) }}"
+                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700" :disabled="!canManage">
+                        <input type="text" name="root_cause" placeholder="Causa raíz" required
+                            value="{{ old('root_cause', $ticket->root_cause) }}"
+                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700" :disabled="!canManage">
+                        <div class="flex justify-end">
+                            <button type="submit"
+                                class="rounded-lg border border-gray-300 px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                                :disabled="!canManage">
+                                Guardar clasificación
+                            </button>
+                        </div>
+                    </form>
+                @endif
             </div>
 
             <div x-show="tab === 'resolucion'">
                 <div class="text-sm font-medium text-gray-700 mb-3">Resolución</div>
-                <div x-show="!hasAssignment" class="admin-warning mb-4 rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3 text-xs text-yellow-800">
-                    Asigna el ticket a un técnico para completar la resolución.
-                </div>
-                <div x-show="actionsCount === 0" class="mb-4 rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3 text-xs text-yellow-800">
-                    Registra al menos una acción antes de completar la resolución.
-                </div>
-                <div x-show="!classificationComplete" class="mb-4 rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3 text-xs text-yellow-800">
-                    Completa la clasificación técnica antes de cerrar el ticket.
-                </div>
-                <form method="POST" action="{{ route('admin.tickets.resolve', $ticket) }}" class="space-y-3" data-ajax="true" data-ajax-type="resolution" data-ticket-id="{{ $ticket->id }}">
-                    @csrf
-                    <textarea name="resolution_text" rows="4" placeholder="Resumen de resolución" required
-                        class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700" :disabled="!canManage">{{ $ticket->resolution?->resolution_text }}</textarea>
-                    <div class="flex justify-end">
-                        <button type="submit"
-                            class="rounded-lg border border-[#6B8E23] px-3 py-2 text-xs text-[#6B8E23] hover:bg-[#F4F7EE] disabled:opacity-50"
-                            :disabled="!canManage">
-                            Completar ticket
-                        </button>
+                @if ($isResolved)
+                    <div class="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-700">
+                        <div class="text-xs text-gray-400">Resumen</div>
+                        <div class="mt-1">{{ $ticket->resolution?->resolution_text ?: '—' }}</div>
                     </div>
-                </form>
+                @else
+                    <div x-show="!hasAssignment" class="admin-warning mb-4 rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3 text-xs text-yellow-800">
+                        Asigna el ticket a un técnico para completar la resolución.
+                    </div>
+                    <div x-show="actionsCount === 0" class="mb-4 rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3 text-xs text-yellow-800">
+                        Registra al menos una acción antes de completar la resolución.
+                    </div>
+                    <div x-show="!classificationComplete" class="mb-4 rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3 text-xs text-yellow-800">
+                        Completa la clasificación técnica antes de cerrar el ticket.
+                    </div>
+                    <form method="POST" action="{{ route('admin.tickets.resolve', $ticket) }}" class="space-y-3" data-ajax="true" data-ajax-type="resolution" data-ticket-id="{{ $ticket->id }}">
+                        @csrf
+                        <textarea name="resolution_text" rows="4" placeholder="Resumen de resolución" required
+                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700" :disabled="!canManage">{{ $ticket->resolution?->resolution_text }}</textarea>
+                        <div class="flex justify-end">
+                            <button type="submit"
+                                class="rounded-lg border border-[#6B8E23] px-3 py-2 text-xs text-[#6B8E23] hover:bg-[#F4F7EE] disabled:opacity-50"
+                                :disabled="!canManage">
+                                Completar ticket
+                            </button>
+                        </div>
+                    </form>
+                @endif
             </div>
 
+            @if (!$isResolved)
             <div x-show="tab === 'cierre_rapido'">
                 <div class="text-sm font-medium text-gray-700 mb-3">Cierre rápido</div>
                 <div class="text-xs text-gray-500 mb-3">
@@ -451,6 +485,7 @@
                     </div>
                 </form>
             </div>
+            @endif
         </div>
     </div>
 </div>

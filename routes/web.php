@@ -123,6 +123,8 @@ Route::middleware(['auth', 'active.user', 'force.password', 'admin'])
             ->name('admin.tickets.index');
         Route::get('/{ticket}/modal', [AdminTicketController::class, 'modal'])
             ->name('admin.tickets.modal');
+        Route::get('/{ticket}/card', [AdminTicketController::class, 'card'])
+            ->name('admin.tickets.card');
         Route::get('/asistido', [AssistedTicketController::class, 'create'])
             ->name('admin.tickets.assisted.create');
         Route::get('/asistido/users', [AssistedTicketController::class, 'users'])
@@ -139,6 +141,8 @@ Route::middleware(['auth', 'active.user', 'force.password', 'admin'])
             ->name('admin.tickets.status');
         Route::post('/{ticket}/resolve', [AdminTicketController::class, 'resolve'])
             ->name('admin.tickets.resolve');
+        Route::post('/{ticket}/reopen', [AdminTicketController::class, 'reopen'])
+            ->name('admin.tickets.reopen');
         Route::post('/{ticket}/quick-close', [AdminTicketController::class, 'quickClose'])
             ->name('admin.tickets.quick-close');
         Route::post('/{ticket}/parts', [AdminTicketController::class, 'addPart'])

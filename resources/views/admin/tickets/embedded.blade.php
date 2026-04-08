@@ -1,4 +1,4 @@
-<div id="admin-ticket-manager" data-auth-id="{{ auth()->id() }}" data-modal-url="{{ route('admin.tickets.modal', ['ticket' => 'TICKET_ID']) }}" class="bg-white rounded-xl shadow-xl border border-gray-200 p-6 flex flex-col h-full" x-data="{ showResolved: false, query: '' }">
+<div id="admin-ticket-manager" data-auth-id="{{ auth()->id() }}" data-modal-url="{{ route('admin.tickets.modal', ['ticket' => 'TICKET_ID']) }}" data-card-url="{{ route('admin.tickets.card', ['ticket' => 'TICKET_ID']) }}" class="bg-white rounded-xl shadow-xl border border-gray-200 p-6 flex flex-col h-full" x-data="{ showResolved: false, query: '' }">
     <div class="flex items-center justify-between mb-4 gap-3">
         <div class="flex items-center gap-2" x-data="{ openSearch: false }">
             <div
@@ -30,80 +30,7 @@
     <div class="flex-1 overflow-y-auto">
         <div class="space-y-4 pr-2">
             @forelse($tickets as $ticket)
-            @php
-                $status = $ticket->latestStatusEvent?->to_status ?? 'nuevo';
-                $locacionPadre = $ticket->locacion?->nombre ?? 'Sin ubicación';
-                $locacionLabel = $ticket->locacion_hija_texto
-                    ? $locacionPadre . ' - ' . $ticket->locacion_hija_texto
-                    : $locacionPadre;
-            @endphp
-            @php
-                $assignedTechs = $ticket->currentAssignments ?? collect();
-                $assignedIds = $assignedTechs->pluck('technician_id')->all();
-                $assignedIdsAttr = implode(',', $assignedIds);
-                $assignedNames = $assignedTechs->pluck('technician.name')->filter()->join(', ');
-                $domainKeys = $ticket->domain_keys ?? [];
-                $domainKeysAttr = implode(',', $domainKeys);
-                $statusKey = $status;
-                $isResolved = in_array($status, ['resuelto', 'cerrado'], true);
-                $isStandby = in_array($status, ['standby', 'en_espera'], true);
-                $isCompact = $isResolved || $isStandby;
-                $statusLabel = $status === 'standby' ? 'en espera' : $status;
-                $searchText = strtolower(trim(implode(' ', array_filter([
-                    $ticket->display_id,
-                    $ticket->usuario_mail,
-                    $ticket->usuario,
-                    $ticket->requester?->name,
-                    $locacionLabel,
-                    $ticket->descripcion,
-                    $statusLabel,
-                ]))));
-            @endphp
-            <div
-                x-show="(showResolved || !['resuelto', 'cerrado'].includes($el.dataset.statusKey)) && (!query || ($el.dataset.search && $el.dataset.search.includes(query.toLowerCase())))"
-                x-cloak
-                class="group border rounded-lg cursor-pointer {{ $isCompact ? 'px-3 py-2 text-[11px]' : 'p-4' }} {{ $isResolved ? 'bg-gray-50 text-gray-500 border-gray-200' : ($isStandby ? 'bg-orange-50 text-orange-800 border-orange-200' : 'bg-gray-50 border-gray-200') }}"
-                data-ticket-card
-                data-ticket-id="{{ $ticket->id }}"
-                data-domain-keys="{{ $domainKeysAttr }}"
-                data-technician-ids="{{ $assignedIdsAttr }}"
-                data-status-key="{{ $statusKey }}"
-                data-search="{{ $searchText }}"
-                onclick="window.openAdminTicketModal && window.openAdminTicketModal('{{ $ticket->id }}')"
-                role="button"
-                tabindex="0">
-                <div class="flex items-start justify-between gap-4">
-                    <div>
-                        @php
-                            $requesterName = $ticket->usuario ?: ($ticket->requester?->name ?? 'Sin nombre');
-                        @endphp
-                        <div class="{{ $isResolved ? 'font-medium text-gray-500' : ($isStandby ? 'font-medium text-orange-800' : 'font-medium text-gray-800') }}">
-                            #{{ $ticket->display_id }} · {{ $requesterName }}
-                        </div>
-                        @if($isCompact)
-                            <div class="text-[11px] {{ $isStandby ? 'text-orange-600' : 'text-gray-500' }}">
-                                {{ $ticket->usuario_mail }}
-                            </div>
-                        @else
-                            <div class="text-sm text-gray-600">{{ $ticket->usuario_mail }}</div>
-                            <div class="text-xs text-gray-400">Ubicación: {{ $locacionLabel }}</div>
-                            <div class="mt-2 text-sm text-gray-700">{{ $ticket->descripcion }}</div>
-                        @endif
-                    </div>
-
-                    <div class="text-xs text-gray-500 text-right">
-                        <div>Estado: <span data-status-ticket="{{ $ticket->id }}" class="{{ $isResolved ? 'font-medium text-gray-500' : ($isStandby ? 'font-medium text-orange-700' : 'font-medium text-gray-700') }}">{{ $statusLabel }}</span></div>
-                        @if(!$isCompact)
-                            <div>Asignado: <span data-assigned-ticket="{{ $ticket->id }}">{{ $assignedNames ?: '—' }}</span></div>
-                            <div>{{ $ticket->created_at->format('d-m-Y H:i') }}</div>
-                        @endif
-                    </div>
-                </div>
-
-                <div class="{{ $isCompact ? 'mt-1' : 'mt-3' }} text-[10px] text-gray-400 opacity-0 group-hover:opacity-100 transition">
-                    Clic para ver las acciones
-                </div>
-            </div>
+                @include('admin.tickets.card', ['ticket' => $ticket])
             @empty
             <div class="text-center text-gray-500 py-6">No hay tickets registrados</div>
             @endforelse
@@ -142,7 +69,7 @@
             const modalLoading = document.getElementById('admin-ticket-modal-loading');
             const modalBackdrop = modalRoot?.querySelector('[data-modal-backdrop]');
             const modalUrlTemplate = manager?.dataset.modalUrl;
-            const modalCache = new Map();
+            const cardUrlTemplate = manager?.dataset.cardUrl;
             let activeTicketId = null;
 
             const viewer = document.getElementById('admin-attachment-viewer');
@@ -175,17 +102,37 @@
                 return modalUrlTemplate.replace('TICKET_ID', ticketId);
             };
 
+            const buildCardUrl = (ticketId) => {
+                if (!cardUrlTemplate) return null;
+                return cardUrlTemplate.replace('TICKET_ID', ticketId);
+            };
+
+            async function refreshCard(ticketId) {
+                const url = buildCardUrl(ticketId);
+                if (!url) return;
+                try {
+                    const response = await fetch(url, { headers: { 'Accept': 'text/html', 'Cache-Control': 'no-store' } });
+                    if (!response.ok) return;
+                    const html = await response.text();
+                    const existing = document.querySelector(`[data-ticket-card][data-ticket-id="${ticketId}"]`);
+                    if (!existing) return;
+                    const wrapper = document.createElement('div');
+                    wrapper.innerHTML = html.trim();
+                    const nextCard = wrapper.firstElementChild;
+                    if (nextCard) {
+                        existing.replaceWith(nextCard);
+                    }
+                } catch (_) {}
+            }
+
             async function fetchModal(ticketId) {
-                if (modalCache.has(ticketId)) {
-                    return modalCache.get(ticketId);
-                }
                 const url = buildModalUrl(ticketId);
                 if (!url) return null;
-                const response = await fetch(url, { headers: { 'Accept': 'text/html' } });
+                const response = await fetch(url, {
+                    headers: { 'Accept': 'text/html', 'Cache-Control': 'no-store' }
+                });
                 if (!response.ok) return null;
-                const html = await response.text();
-                modalCache.set(ticketId, html);
-                return html;
+                return await response.text();
             }
 
             async function openModal(ticketId, options = {}) {
@@ -391,6 +338,128 @@
                         loadChat(container);
                     }
                 } catch (_) {}
+            });
+
+            async function submitAjaxForm(form, {
+                loadingText = 'Guardando...',
+                errorText = 'No se pudo guardar.',
+                onSuccess,
+                buttonSelector = 'button[type="submit"]',
+                defaultText = null,
+            }) {
+                const ticketId = form.dataset.ticketId;
+                const url = form.getAttribute('action');
+                if (!ticketId || !url) return;
+
+                const submitBtn = form.querySelector(buttonSelector);
+                const originalText = submitBtn?.textContent;
+                if (submitBtn) {
+                    submitBtn.textContent = loadingText;
+                    submitBtn.disabled = true;
+                    submitBtn.classList.add('opacity-60', 'cursor-not-allowed');
+                }
+
+                const formData = new FormData(form);
+                try {
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            ...(csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {}),
+                        },
+                        body: formData,
+                    });
+                    if (!response.ok) {
+                        if (window.showToast) {
+                            window.showToast('error', errorText);
+                        }
+                        return;
+                    }
+                    const payload = await response.json().catch(() => null);
+                    if (onSuccess) {
+                        await onSuccess({ ticketId, payload, form });
+                    }
+                } catch (_) {
+                    if (window.showToast) {
+                        window.showToast('error', errorText);
+                    }
+                } finally {
+                    if (submitBtn) {
+                        submitBtn.textContent = originalText || defaultText || submitBtn.textContent;
+                        submitBtn.disabled = false;
+                        submitBtn.classList.remove('opacity-60', 'cursor-not-allowed');
+                    }
+                }
+            }
+
+            document.addEventListener('submit', async (event) => {
+                const form = event.target.closest('form[data-ajax-type="assignment"]');
+                if (!form) return;
+                event.preventDefault();
+
+                await submitAjaxForm(form, {
+                    loadingText: 'Guardando...',
+                    errorText: 'No se pudo guardar la asignación.',
+                    buttonSelector: '[data-assign-submit]',
+                    onSuccess: async ({ ticketId, form }) => {
+                        await refreshCard(ticketId);
+                        const modalRoot = document.getElementById('admin-ticket-modal-body');
+                        const alpineRoot = modalRoot?.querySelector('[x-data]');
+                        const currentTab = alpineRoot?.__x?.$data?.tab || 'antecedentes';
+
+                        const dropdown = form.closest('[data-assign-dropdown]');
+                        if (dropdown?.__x?.$data) {
+                            dropdown.__x.$data.openAssign = false;
+                        }
+                        window.dispatchEvent(new CustomEvent('close-assign-dropdown'));
+                        await openModal(ticketId, { tab: currentTab });
+                    },
+                });
+            });
+
+            document.addEventListener('submit', async (event) => {
+                const form = event.target.closest('form[data-ajax-type="action"]');
+                if (!form) return;
+                event.preventDefault();
+
+                await submitAjaxForm(form, {
+                    loadingText: 'Guardando...',
+                    errorText: 'No se pudo guardar la acción.',
+                    onSuccess: async ({ ticketId }) => {
+                        await openModal(ticketId, { tab: 'acciones' });
+                    },
+                });
+            });
+
+            document.addEventListener('submit', async (event) => {
+                const form = event.target.closest('form[data-ajax-type="classification"]');
+                if (!form) return;
+                event.preventDefault();
+
+                await submitAjaxForm(form, {
+                    loadingText: 'Guardando...',
+                    errorText: 'No se pudo guardar la clasificación.',
+                    onSuccess: async ({ ticketId }) => {
+                        await openModal(ticketId, { tab: 'clasificacion' });
+                    },
+                });
+            });
+
+            document.addEventListener('submit', async (event) => {
+                const form = event.target.closest('form[data-ajax-type="reopen"]');
+                if (!form) return;
+                event.preventDefault();
+
+                await submitAjaxForm(form, {
+                    loadingText: 'Reabriendo...',
+                    errorText: 'No se pudo reabrir el ticket.',
+                    onSuccess: async ({ ticketId, payload }) => {
+                        if (payload?.ticket_id) {
+                            await refreshCard(ticketId);
+                        }
+                        await openModal(ticketId, { tab: 'antecedentes' });
+                    },
+                });
             });
 
             document.addEventListener('keydown', (event) => {

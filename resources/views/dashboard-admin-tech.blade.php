@@ -91,11 +91,8 @@
                             <div class="space-y-3">
                                 @forelse($assignedTickets as $ticket)
                                     @php
-                                        $locacionPadre = $ticket->locacion?->nombre ?? 'Sin ubicación';
-                                        $locacionLabel = $ticket->locacion_hija_texto
-                                            ? $locacionPadre . ' - ' . $ticket->locacion_hija_texto
-                                            : $locacionPadre;
-                                        $status = $ticket->latestStatusEvent?->to_status ?? 'nuevo';
+                                        $locacionLabel = \App\Support\TicketView::locationLabel($ticket);
+                                        $status = \App\Support\TicketView::statusLabel($ticket->latestStatusEvent?->to_status ?? 'nuevo', 'code');
                                     @endphp
                                     <div class="rounded-lg border border-gray-200 bg-gray-50 p-3 text-sm text-gray-700">
                                         <div class="flex items-center justify-between">
@@ -118,10 +115,7 @@
                                 @forelse($resolvedTickets as $ticket)
                                     @php
                                         $resolvedAt = $ticket->resolved_at ? $ticket->resolved_at->format('d-m-Y H:i') : '—';
-                                        $locacionPadre = $ticket->locacion?->nombre ?? 'Sin ubicación';
-                                        $locacionLabel = $ticket->locacion_hija_texto
-                                            ? $locacionPadre . ' - ' . $ticket->locacion_hija_texto
-                                            : $locacionPadre;
+                                        $locacionLabel = \App\Support\TicketView::locationLabel($ticket);
                                     @endphp
                                     <div class="rounded-lg border border-gray-200 bg-gray-50 p-3 text-sm text-gray-700">
                                         <div class="flex items-center justify-between">

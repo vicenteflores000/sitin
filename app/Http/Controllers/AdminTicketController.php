@@ -60,6 +60,20 @@ class AdminTicketController extends Controller
         return view('admin.tickets.modal', compact('ticket', 'admins'));
     }
 
+    public function card(Ticket $ticket)
+    {
+        $ticket->loadMissing([
+            'locacion.padre',
+            'latestStatusEvent',
+            'currentAssignment.technician',
+            'currentAssignments.technician',
+            'requester',
+            'actions',
+        ]);
+
+        return view('admin.tickets.card', compact('ticket'));
+    }
+
     public function assignToMe(Ticket $ticket): RedirectResponse
     {
         $this->assignTicket($ticket, auth()->id());
@@ -83,7 +97,7 @@ class AdminTicketController extends Controller
         return back();
     }
 
-    public function syncAssignments(Request $request, Ticket $ticket): RedirectResponse
+    public function syncAssignments(Request $request, Ticket $ticket)
     {
         $data = $request->validate([
             'technician_ids' => 'array',
@@ -153,6 +167,10 @@ class AdminTicketController extends Controller
             $this->sendAssignmentNotification($ticket);
         }
 
+        if ($request->expectsJson()) {
+            return response()->json($this->buildTicketResponse($ticket));
+        }
+
         return back();
     }
 
@@ -217,6 +235,30 @@ class AdminTicketController extends Controller
 
         $this->changeStatus($ticket, 'resuelto', null);
         $this->sendResolutionNotification($ticket, $resolution);
+
+        return back();
+    }
+
+    public function reopen(Request $request, Ticket $ticket)
+    {
+        if (! $this->canManageTicket($ticket)) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'Solo el técnico asignado puede reabrir este ticket.'], 403);
+            }
+            return back()->withErrors(['reopen' => 'Solo el técnico asignado puede reabrir este ticket.']);
+        }
+
+        $ticket->update([
+            'resolved_by' => null,
+            'resolved_at' => null,
+        ]);
+
+        $hasAssignment = $ticket->currentAssignments?->isNotEmpty();
+        $this->changeStatus($ticket, $hasAssignment ? 'asignado' : 'nuevo', 'Ticket reabierto');
+
+        if ($request->expectsJson()) {
+            return response()->json($this->buildTicketResponse($ticket));
+        }
 
         return back();
     }
@@ -472,5 +514,25 @@ class AdminTicketController extends Controller
         }
 
         return $assignments->contains('technician_id', auth()->id());
+    }
+
+    protected function buildTicketResponse(Ticket $ticket): array
+    {
+        $ticket->refresh()->load(['currentAssignments.technician', 'latestStatusEvent']);
+        $assignedTechs = $ticket->currentAssignments ?? collect();
+        $assignedIds = $assignedTechs->pluck('technician_id')->values();
+        $assignedNames = $assignedTechs->pluck('technician.name')->filter()->join(', ');
+        $statusKey = $ticket->latestStatusEvent?->to_status ?? 'nuevo';
+        $statusLabel = $statusKey === 'standby' ? 'en espera' : $statusKey;
+
+        return [
+            'ticket_id' => $ticket->id,
+            'assigned_ids' => $assignedIds,
+            'assigned_names' => $assignedNames,
+            'has_assignment' => $assignedIds->isNotEmpty(),
+            'can_manage' => $assignedIds->contains(auth()->id()),
+            'status_key' => $statusKey,
+            'status_label' => $statusLabel,
+        ];
     }
 }

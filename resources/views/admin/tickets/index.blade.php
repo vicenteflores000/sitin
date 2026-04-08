@@ -26,10 +26,7 @@
                         @forelse($tickets as $ticket)
                         @php
                             $status = $ticket->latestStatusEvent?->to_status ?? 'nuevo';
-                            $locacionPadre = $ticket->locacion?->nombre ?? 'Sin ubicación';
-                            $locacionLabel = $ticket->locacion_hija_texto
-                                ? $locacionPadre . ' - ' . $ticket->locacion_hija_texto
-                                : $locacionPadre;
+                            $locacionLabel = \App\Support\TicketView::locationLabel($ticket);
                         @endphp
                         @php
                             $classificationComplete = ($ticket->categoria_interna && $ticket->problem_type && $ticket->root_cause);
@@ -39,20 +36,20 @@
                             $assignedNames = $assignedTechs->pluck('technician.name')->filter()->join(', ');
                             $hasAssignment = $assignedTechs->isNotEmpty();
                             $canManage = $assignedTechs->contains('technician_id', auth()->id());
-                            $isResolved = in_array($status, ['resuelto', 'cerrado'], true);
-                            $isStandby = in_array($status, ['standby', 'en_espera'], true);
-                            $isCompact = $isResolved || $isStandby;
-                            $statusLabel = $status === 'standby' ? 'en espera' : $status;
+                            $statusMeta = \App\Support\TicketView::statusMeta($ticket);
+                            $isResolved = $statusMeta['is_resolved'];
+                            $isStandby = $statusMeta['is_standby'];
+                            $isCompact = $statusMeta['is_compact'];
                         @endphp
-                        <div x-data="{ open: false, tab: 'antecedentes', canResolve: {{ ($classificationComplete && $actionsCount > 0 && $canManage) ? 'true' : 'false' }}, canManage: {{ $canManage ? 'true' : 'false' }}, isStandby: {{ $isStandby ? 'true' : 'false' }} }" class="group border rounded-lg cursor-pointer {{ $isCompact ? 'px-3 py-2 text-[11px]' : 'p-4' }} {{ $isResolved ? 'bg-gray-50 text-gray-500 border-gray-200' : ($isStandby ? 'bg-orange-50 text-orange-800 border-orange-200' : 'bg-gray-50 border-gray-200') }}" @click="open = true" role="button" tabindex="0">
+                        <div x-data="{ open: false, tab: 'antecedentes', canResolve: {{ ($classificationComplete && $actionsCount > 0 && $canManage) ? 'true' : 'false' }}, canManage: {{ $canManage ? 'true' : 'false' }}, isStandby: {{ $isStandby ? 'true' : 'false' }} }" class="group border rounded-lg cursor-pointer {{ $isCompact ? 'px-3 py-2 text-[11px]' : 'p-4' }} {{ $statusMeta['card_class'] }}" @click="open = true" role="button" tabindex="0">
                             <div class="flex items-start justify-between gap-4">
                                 <div>
                                     @php
                                         $requesterName = $ticket->usuario ?: ($ticket->requester?->name ?? 'Sin nombre');
                                     @endphp
-                                    <div class="{{ $isResolved ? 'font-medium text-gray-500' : ($isStandby ? 'font-medium text-orange-800' : 'font-medium text-gray-800') }}">#{{ $ticket->display_id }} · {{ $requesterName }}</div>
+                                    <div class="font-medium {{ $statusMeta['title_class'] }}">#{{ $ticket->display_id }} · {{ $requesterName }}</div>
                                     @if($isCompact)
-                                        <div class="text-[11px] {{ $isStandby ? 'text-orange-600' : 'text-gray-500' }}">{{ $ticket->usuario_mail }}</div>
+                                        <div class="text-[11px] {{ $statusMeta['email_class'] }}">{{ $ticket->usuario_mail }}</div>
                                     @else
                                         <div class="text-sm text-gray-600">{{ $ticket->usuario_mail }}</div>
                                         <div class="text-xs text-gray-400">Ubicación: {{ $locacionLabel }}</div>
@@ -61,7 +58,7 @@
                                 </div>
 
                                     <div class="text-xs text-gray-500 text-right">
-                                        <div>Estado: <span class="{{ $isResolved ? 'font-medium text-gray-500' : ($isStandby ? 'font-medium text-orange-700' : 'font-medium text-gray-700') }}">{{ $statusLabel }}</span></div>
+                                        <div>Estado: <span class="font-medium {{ $statusMeta['text_class'] }}">{{ $statusMeta['label'] }}</span></div>
                                         @if(!$isCompact)
                                         <div>Asignado: {{ $assignedNames ?: '—' }}</div>
                                         <div>{{ $ticket->created_at->format('d-m-Y H:i') }}</div>
@@ -260,7 +257,7 @@
                                                 <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-700">
                                                     <div>
                                                         <div class="text-xs text-gray-400">Estado</div>
-                                                    <div>{{ $statusLabel }}</div>
+                                                    <div>{{ $statusMeta['label'] }}</div>
                                                     </div>
                                                     <div>
                                                         <div class="text-xs text-gray-400">Asignado</div>

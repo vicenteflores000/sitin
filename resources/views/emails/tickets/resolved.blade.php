@@ -38,7 +38,7 @@
                                 <tr>
                                     <td style="padding: 6px 0; font-weight: bold; width: 140px;">Ubicación</td>
                                     <td style="padding: 6px 0;">
-                                        {{ $ticket->locacion?->nombre ?? 'No especificado' }}@if($ticket->locacion_hija_texto) - {{ $ticket->locacion_hija_texto }}@endif
+                                        {{ \App\Support\TicketView::locationLabel($ticket, 'No especificado') }}
                                     </td>
                                 </tr>
                                 <tr>

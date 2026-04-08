@@ -186,9 +186,7 @@
                         ], true);
 
                         $idCompuesto = $ticket->display_id;
-                        $statusLabel = $statusRaw
-                            ? ucfirst(str_replace('_', ' ', $statusRaw))
-                            : 'Sin estado';
+                        $statusLabel = \App\Support\TicketView::statusLabel($statusRaw, 'title');
                         @endphp
 
                         <div
